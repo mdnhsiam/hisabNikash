@@ -6,4 +6,5 @@ data class GoalAllocation(
     val amountMinor: Long,
     val note: String? = null,
     val allocatedAtEpochMillis: Long,
+    val reversesAllocationId: String? = null,
 )

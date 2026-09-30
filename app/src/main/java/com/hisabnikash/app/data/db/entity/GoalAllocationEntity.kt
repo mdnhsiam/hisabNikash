@@ -15,7 +15,7 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index("goalId"), Index("allocatedAtEpochMillis")],
+    indices = [Index("goalId"), Index("allocatedAtEpochMillis"), Index(value = ["reversesAllocationId"], unique = true)],
 )
 data class GoalAllocationEntity(
     @PrimaryKey val id: String,
@@ -23,4 +23,5 @@ data class GoalAllocationEntity(
     val amountMinor: Long,
     val note: String?,
     val allocatedAtEpochMillis: Long,
+    val reversesAllocationId: String?,
 )

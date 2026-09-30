@@ -42,4 +42,18 @@
     <string name="by_payment_method">Expenses by payment method</string>
     <string name="no_expenses_this_month">No expenses this month.</string>
     <string name="uncategorized">Uncategorized</string>
+    <string name="total_budget">Total budget</string>
+    <string name="budget_amount">Budget amount</string>
+    <string name="save_total_budget">Save total</string>
+    <string name="save_category_budget">Save category</string>
+    <string name="monthly_deficit">Monthly deficit</string>
+    <string name="available_for_goals">Available for goals: %1$s</string>
+    <string name="savings_goals">Savings goals</string>
+    <string name="add_goal">Add goal</string>
+    <string name="goal_setup_prompt">Optional: add a goal when you want to earmark part of your savings.</string>
+    <string name="allocate_savings">Allocate savings</string>
+    <string name="reverse_last_allocation">Reverse last allocation</string>
+    <string name="goal_name">Goal name</string>
+    <string name="target_optional">Target amount (optional)</string>
+    <string name="allocate_to_goal">Allocate to %1$s</string>
 </resources>

@@ -13,7 +13,9 @@ internal fun emptyDashboardSummary(month: MonthKey) = DashboardSummary(
     expenseMinor = 0,
     netSavingsMinor = 0,
     allocatedToGoalsMinor = 0,
+    unallocatedSavingsMinor = 0,
     budget = null,
+    categoryBudgets = emptyMap(),
     recentTransactions = emptyList(),
     expenseByCategory = emptyMap(),
 )

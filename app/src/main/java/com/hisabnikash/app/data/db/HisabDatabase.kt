@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.hisabnikash.app.data.db.dao.BudgetDao
 import com.hisabnikash.app.data.db.dao.CategoryDao
@@ -28,7 +29,7 @@ import com.hisabnikash.app.data.repository.DefaultCategories
         GoalAllocationEntity::class,
         RecurringItemEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(DbConverters::class)
@@ -45,13 +46,22 @@ abstract class HisabDatabase : RoomDatabase() {
         fun create(context: Context): HisabDatabase =
             Room.databaseBuilder(context, HisabDatabase::class.java, DATABASE_NAME)
                 .addCallback(SeedCategoriesCallback)
+                .addMigrations(MIGRATION_1_2)
                 .build()
 
         fun createInMemory(context: Context): HisabDatabase =
             Room.inMemoryDatabaseBuilder(context, HisabDatabase::class.java)
                 .allowMainThreadQueries()
                 .addCallback(SeedCategoriesCallback)
+                .addMigrations(MIGRATION_1_2)
                 .build()
+
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE goal_allocations ADD COLUMN reversesAllocationId TEXT")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_goal_allocations_reversesAllocationId ON goal_allocations (reversesAllocationId)")
+            }
+        }
     }
 }
 

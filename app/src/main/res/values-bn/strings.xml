@@ -42,4 +42,18 @@
     <string name="by_payment_method">পেমেন্ট মাধ্যম অনুযায়ী খরচ</string>
     <string name="no_expenses_this_month">এই মাসে কোনো খরচ নেই।</string>
     <string name="uncategorized">ক্যাটাগরি নেই</string>
+    <string name="total_budget">মোট বাজেট</string>
+    <string name="budget_amount">বাজেটের পরিমাণ</string>
+    <string name="save_total_budget">মোট বাজেট সেভ</string>
+    <string name="save_category_budget">ক্যাটাগরি বাজেট সেভ</string>
+    <string name="monthly_deficit">মাসিক ঘাটতি</string>
+    <string name="available_for_goals">লক্ষ্যের জন্য পাওয়া যাবে: %1$s</string>
+    <string name="savings_goals">সঞ্চয়ের লক্ষ্য</string>
+    <string name="add_goal">লক্ষ্য যোগ করুন</string>
+    <string name="goal_setup_prompt">ঐচ্ছিক: সঞ্চয়ের একটি অংশ আলাদা রাখতে চাইলে লক্ষ্য যোগ করুন।</string>
+    <string name="allocate_savings">সঞ্চয় বরাদ্দ করুন</string>
+    <string name="reverse_last_allocation">শেষ বরাদ্দ ফেরত নিন</string>
+    <string name="goal_name">লক্ষ্যের নাম</string>
+    <string name="target_optional">লক্ষ্যমাত্রা (ঐচ্ছিক)</string>
+    <string name="allocate_to_goal">%1$s-এ বরাদ্দ করুন</string>
 </resources>

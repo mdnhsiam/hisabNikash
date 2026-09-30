@@ -16,6 +16,18 @@ interface SavingsDao {
     @Query("SELECT * FROM goal_allocations WHERE goalId = :goalId ORDER BY allocatedAtEpochMillis")
     fun observeAllocations(goalId: String): Flow<List<GoalAllocationEntity>>
 
+    @Query("SELECT * FROM goal_allocations ORDER BY allocatedAtEpochMillis")
+    fun observeAllAllocations(): Flow<List<GoalAllocationEntity>>
+
+    @Query("SELECT * FROM goal_allocations WHERE id = :id")
+    suspend fun findAllocation(id: String): GoalAllocationEntity?
+
+    @Query("SELECT COUNT(*) FROM goal_allocations WHERE reversesAllocationId = :allocationId")
+    suspend fun reversalCount(allocationId: String): Int
+
+    @Query("SELECT * FROM savings_goals WHERE id = :id")
+    suspend fun findGoal(id: String): SavingsGoalEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertGoal(goal: SavingsGoalEntity)
 

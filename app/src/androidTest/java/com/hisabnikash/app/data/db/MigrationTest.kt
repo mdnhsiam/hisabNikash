@@ -18,6 +18,7 @@ class MigrationTest {
     @Test
     fun versionOneSchemaCanBeCreatedFromExport() {
         helper.createDatabase(TEST_DATABASE, 1).close()
+        helper.runMigrationsAndValidate(TEST_DATABASE, 2, true, HisabDatabase.MIGRATION_1_2).close()
     }
 
     private companion object {

@@ -3,6 +3,8 @@ package com.hisabnikash.app.navigation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.FloatingActionButton
@@ -26,6 +28,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -44,6 +48,15 @@ import com.hisabnikash.app.feature.dashboard.DashboardScreen
 import com.hisabnikash.app.feature.dashboard.DashboardViewModel
 import com.hisabnikash.app.feature.reports.ReportsScreen
 import com.hisabnikash.app.feature.reports.ReportsViewModel
+import com.hisabnikash.app.feature.budgets.BudgetScreen
+import com.hisabnikash.app.feature.budgets.BudgetViewModel
+import com.hisabnikash.app.feature.savings.SavingsScreen
+import com.hisabnikash.app.feature.savings.SavingsViewModel
+import com.hisabnikash.app.core.model.CategoryType
+import com.hisabnikash.app.core.time.MonthKey
+import com.hisabnikash.app.domain.FinanceCalculator
+import java.time.Instant
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,6 +68,7 @@ fun HisabNavHost(container: AppContainer) {
     var showQuickEntry by remember { mutableStateOf(false) }
     var showDuplicateWarning by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val currentMonth = remember { MonthKey.fromInstant(Instant.now()) }
     val quickEntryViewModel: QuickEntryViewModel = viewModel(
         factory = remember(container) {
             viewModelFactory {
@@ -75,12 +89,47 @@ fun HisabNavHost(container: AppContainer) {
     )
     val dashboardViewModel: DashboardViewModel = viewModel(
         factory = remember(container) {
-            viewModelFactory { initializer { DashboardViewModel(container.transactionRepository) } }
+            viewModelFactory {
+                initializer {
+                    DashboardViewModel(
+                        transactionRepository = container.transactionRepository,
+                        budgets = container.budgetRepository.observeMonth(currentMonth),
+                        allocations = container.savingsRepository.observeAllocations(),
+                    )
+                }
+            }
         },
     )
     val reportsViewModel: ReportsViewModel = viewModel(
         factory = remember(container) {
             viewModelFactory { initializer { ReportsViewModel(container.transactionRepository) } }
+        },
+    )
+    val budgetViewModel: BudgetViewModel = viewModel(
+        factory = remember(container) {
+            viewModelFactory {
+                initializer {
+                    BudgetViewModel(
+                        repository = container.budgetRepository,
+                        month = currentMonth,
+                        categories = container.categoryRepository.observeActive(CategoryType.EXPENSE),
+                    )
+                }
+            }
+        },
+    )
+    val savingsViewModel: SavingsViewModel = viewModel(
+        factory = remember(container) {
+            viewModelFactory {
+                initializer {
+                    SavingsViewModel(
+                        repository = container.savingsRepository,
+                        monthlySavingsMinor = container.transactionRepository.observeAll().map { transactions ->
+                            FinanceCalculator.monthlyReport(transactions, currentMonth).netSavingsMinor
+                        },
+                    )
+                }
+            }
         },
     )
 
@@ -137,7 +186,27 @@ fun HisabNavHost(container: AppContainer) {
                 val state by reportsViewModel.state.collectAsState()
                 ReportsScreen(state, reportsViewModel::previousMonth, reportsViewModel::nextMonth)
             }
-            composable(Route.Savings.path) { PlaceholderScreen(Route.Savings) }
+            composable(Route.Savings.path) {
+                val budgetState by budgetViewModel.state.collectAsState()
+                val savingsState by savingsViewModel.state.collectAsState()
+                Column(
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                ) {
+                    BudgetScreen(
+                        state = budgetState,
+                        onSave = { amount, category -> scope.launch { budgetViewModel.saveBudget(amount, category) } },
+                        onDelete = budgetViewModel::delete,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    SavingsScreen(
+                        state = savingsState,
+                        onCreateGoal = { name, target -> scope.launch { savingsViewModel.createGoal(name, target) } },
+                        onAllocate = { goal, amount -> scope.launch { savingsViewModel.allocate(goal, amount) } },
+                        onReverse = { allocation -> scope.launch { savingsViewModel.reverse(allocation) } },
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                    )
+                }
+            }
             composable(Route.Settings.path) { PlaceholderScreen(Route.Settings) }
         }
     }

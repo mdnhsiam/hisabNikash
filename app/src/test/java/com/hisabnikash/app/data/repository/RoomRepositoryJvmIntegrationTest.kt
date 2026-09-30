@@ -6,6 +6,8 @@ import com.hisabnikash.app.core.model.CategoryType
 import com.hisabnikash.app.core.model.PaymentMethod
 import com.hisabnikash.app.core.model.Transaction
 import com.hisabnikash.app.core.model.TransactionType
+import com.hisabnikash.app.core.model.GoalAllocation
+import com.hisabnikash.app.core.model.SavingsGoal
 import com.hisabnikash.app.data.db.HisabDatabase
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -62,6 +64,27 @@ class RoomRepositoryJvmIntegrationTest {
 
         transactions.delete(original.id)
         assertTrue(transactions.observeAll().first().isEmpty())
+    }
+
+    @Test
+    fun `goal allocation and reversal are atomic auditable records`() = runTest {
+        val savings = RoomSavingsRepository(database)
+        savings.upsertGoal(SavingsGoal("goal", "Emergency", 100_000, createdAtEpochMillis = 10))
+        savings.allocate(GoalAllocation("a1", "goal", 50_000, allocatedAtEpochMillis = 20), availableSavingsMinor = 80_000)
+        savings.reverse("a1", "r1", 30)
+
+        val records = savings.observeAllocations().first()
+        assertEquals(2, records.size)
+        assertEquals(0L, records.sumOf { it.amountMinor })
+        assertEquals("a1", records.last().reversesAllocationId)
+
+        var rejected = false
+        try {
+            savings.allocate(GoalAllocation("too-much", "goal", 90_000, allocatedAtEpochMillis = 40), availableSavingsMinor = 80_000)
+        } catch (_: IllegalArgumentException) {
+            rejected = true
+        }
+        assertTrue(rejected)
     }
 
     private fun expense(id: String, categoryId: String) = Transaction(

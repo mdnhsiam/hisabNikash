@@ -31,15 +31,13 @@ object FinanceCalculator {
         }
         val totalBudget = budgets.firstOrNull { it.monthKey == month.value && it.categoryId == null }
         val budgetStatus = totalBudget?.let {
-            val remaining = it.amountMinor - expense
-            BudgetStatus(
-                limitMinor = it.amountMinor,
-                spentMinor = expense,
-                remainingMinor = remaining,
-                percentUsed = if (it.amountMinor <= 0) 0 else ((expense * 100L) / it.amountMinor).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
-                isExceeded = remaining < 0,
-            )
+            budgetStatus(it.amountMinor, expense)
         }
+        val categoryBudgets = budgets.asSequence()
+            .filter { it.monthKey == month.value && it.categoryId != null }
+            .associate { budget ->
+                budget.categoryId!! to budgetStatus(budget.amountMinor, byCategory[budget.categoryId] ?: 0L)
+            }
         val allocationStart = month.startEpochMillis(zone)
         val allocationEnd = month.endExclusiveEpochMillis(zone)
         val allocated = allocations.asSequence()
@@ -52,7 +50,9 @@ object FinanceCalculator {
             expenseMinor = expense,
             netSavingsMinor = income - expense,
             allocatedToGoalsMinor = allocated,
+            unallocatedSavingsMinor = (income - expense) - allocated,
             budget = budgetStatus,
+            categoryBudgets = categoryBudgets,
             recentTransactions = current.sortedWith(compareByDescending<Transaction> { it.occurredAtEpochMillis }.thenByDescending { it.createdAtEpochMillis }).take(5),
             expenseByCategory = byCategory.toSortedMap(compareBy(nullsLast()) { it }),
         )
@@ -102,6 +102,17 @@ object FinanceCalculator {
             expenseByPaymentMethod = byPayment.toSortedMap(),
         )
     }
+}
+
+private fun budgetStatus(limitMinor: Long, spentMinor: Long): BudgetStatus {
+    val remaining = limitMinor - spentMinor
+    return BudgetStatus(
+        limitMinor = limitMinor,
+        spentMinor = spentMinor,
+        remainingMinor = remaining,
+        percentUsed = if (limitMinor <= 0) 0 else ((spentMinor * 100L) / limitMinor).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+        isExceeded = remaining < 0,
+    )
 }
 
 private fun List<Transaction>.inMonth(month: MonthKey, zone: ZoneId): List<Transaction> {

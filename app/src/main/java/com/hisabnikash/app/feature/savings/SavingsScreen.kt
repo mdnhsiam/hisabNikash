@@ -1,0 +1,100 @@
+package com.hisabnikash.app.feature.savings
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.hisabnikash.app.R
+import com.hisabnikash.app.core.model.SavingsGoal
+import com.hisabnikash.app.core.money.MoneyFormatter
+
+@Composable
+fun SavingsScreen(
+    state: SavingsState,
+    onCreateGoal: (String, String) -> Unit,
+    onAllocate: (String, String) -> Unit,
+    onReverse: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var showGoalEditor by remember { mutableStateOf(false) }
+    var allocatingGoal by remember { mutableStateOf<SavingsGoal?>(null) }
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(if (state.monthlySavingsMinor < 0) stringResource(R.string.monthly_deficit) else stringResource(R.string.monthly_savings))
+                Text(
+                    MoneyFormatter.formatMinorUnits(state.monthlySavingsMinor),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = if (state.monthlySavingsMinor < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                )
+                Text(stringResource(R.string.available_for_goals, MoneyFormatter.formatMinorUnits(state.availableMinor)))
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(stringResource(R.string.savings_goals), style = MaterialTheme.typography.titleMedium)
+            TextButton(onClick = { showGoalEditor = true }) { Text(stringResource(R.string.add_goal)) }
+        }
+        if (state.goals.isEmpty()) Text(stringResource(R.string.goal_setup_prompt), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        state.goals.forEach { goal ->
+            val progress = state.progressFor(goal.id)
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(goal.name, style = MaterialTheme.typography.titleMedium)
+                    Text(MoneyFormatter.formatMinorUnits(progress))
+                    goal.targetMinor?.let { target ->
+                        LinearProgressIndicator(progress = { (progress.toFloat() / target).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
+                    }
+                    TextButton(onClick = { allocatingGoal = goal }) { Text(stringResource(R.string.allocate_savings)) }
+                    state.allocations.lastOrNull { it.goalId == goal.id && it.amountMinor > 0 && state.allocations.none { reversal -> reversal.reversesAllocationId == it.id } }?.let { allocation ->
+                        TextButton(onClick = { onReverse(allocation.id) }) { Text(stringResource(R.string.reverse_last_allocation)) }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showGoalEditor) {
+        var name by remember { mutableStateOf("") }
+        var target by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showGoalEditor = false },
+            title = { Text(stringResource(R.string.add_goal)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.goal_name)) })
+                    OutlinedTextField(target, { target = it }, label = { Text(stringResource(R.string.target_optional)) })
+                }
+            },
+            confirmButton = { Button(onClick = { onCreateGoal(name, target); showGoalEditor = false }, enabled = name.isNotBlank()) { Text(stringResource(R.string.save)) } },
+            dismissButton = { TextButton(onClick = { showGoalEditor = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+
+    allocatingGoal?.let { goal ->
+        var amount by remember(goal.id) { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { allocatingGoal = null },
+            title = { Text(stringResource(R.string.allocate_to_goal, goal.name)) },
+            text = { OutlinedTextField(amount, { amount = it }, label = { Text(stringResource(R.string.amount_bdt)) }) },
+            confirmButton = { Button(onClick = { onAllocate(goal.id, amount); allocatingGoal = null }) { Text(stringResource(R.string.allocate_savings)) } },
+            dismissButton = { TextButton(onClick = { allocatingGoal = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+}

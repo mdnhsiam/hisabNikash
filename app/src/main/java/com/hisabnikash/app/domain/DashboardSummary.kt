@@ -17,7 +17,9 @@ data class DashboardSummary(
     val expenseMinor: Long,
     val netSavingsMinor: Long,
     val allocatedToGoalsMinor: Long,
+    val unallocatedSavingsMinor: Long,
     val budget: BudgetStatus?,
+    val categoryBudgets: Map<String, BudgetStatus>,
     val recentTransactions: List<Transaction>,
     val expenseByCategory: Map<String?, Long>,
 )
