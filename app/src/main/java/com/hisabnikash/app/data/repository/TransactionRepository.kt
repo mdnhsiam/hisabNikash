@@ -1,12 +1,15 @@
 package com.hisabnikash.app.data.repository
 
 import com.hisabnikash.app.core.model.Transaction
+import com.hisabnikash.app.core.model.Category
 import kotlinx.coroutines.flow.Flow
 
 interface TransactionRepository {
     fun observeAll(): Flow<List<Transaction>>
 
     suspend fun add(transaction: Transaction)
+
+    suspend fun addWithCustomCategory(transaction: Transaction, category: Category)
 
     suspend fun update(transaction: Transaction)
 

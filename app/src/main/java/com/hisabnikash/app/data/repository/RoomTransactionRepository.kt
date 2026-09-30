@@ -21,7 +21,7 @@ class RoomTransactionRepository(
         transactionDao.insert(transaction.toEntity())
     }
 
-    suspend fun addWithCustomCategory(transaction: Transaction, category: Category) {
+    override suspend fun addWithCustomCategory(transaction: Transaction, category: Category) {
         validate(transaction)
         require(transaction.categoryId == category.id)
         database.withTransaction {

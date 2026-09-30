@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             HisabTheme {
-                HisabNavHost()
+                HisabNavHost(container = (application as HisabApplication).container)
             }
         }
     }
