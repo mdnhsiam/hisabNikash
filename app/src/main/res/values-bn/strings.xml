@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">হিসাব</string>
+    <string name="nav_dashboard">ড্যাশবোর্ড</string>
+    <string name="nav_transactions">লেনদেন</string>
+    <string name="nav_reports">রিপোর্ট</string>
+    <string name="nav_savings">সঞ্চয়</string>
+    <string name="nav_settings">সেটিংস</string>
+</resources>
