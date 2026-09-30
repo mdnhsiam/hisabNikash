@@ -31,4 +31,15 @@
     <string name="possible_duplicate">সম্ভাব্য ডুপ্লিকেট</string>
     <string name="possible_duplicate_message">একই রকম একটি লেনদেন এইমাত্র সেভ হয়েছে। এটিও সেভ করবেন?</string>
     <string name="save_anyway">তবুও সেভ করুন</string>
+    <string name="dashboard_title">এই মাসের হিসাব এক নজরে</string>
+    <string name="monthly_balance">মাসিক ব্যালেন্স</string>
+    <string name="monthly_budget">মাসিক বাজেট</string>
+    <string name="budget_setup_prompt">ঐচ্ছিক: মাসিক অগ্রগতি দেখতে বাজেট সেট করুন।</string>
+    <string name="recent_transactions">সাম্প্রতিক লেনদেন</string>
+    <string name="monthly_savings">সঞ্চয় / ঘাটতি</string>
+    <string name="previous_month_change">গত মাস থেকে পরিবর্তন</string>
+    <string name="by_category">ক্যাটাগরি অনুযায়ী খরচ</string>
+    <string name="by_payment_method">পেমেন্ট মাধ্যম অনুযায়ী খরচ</string>
+    <string name="no_expenses_this_month">এই মাসে কোনো খরচ নেই।</string>
+    <string name="uncategorized">ক্যাটাগরি নেই</string>
 </resources>

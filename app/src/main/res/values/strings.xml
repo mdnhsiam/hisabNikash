@@ -31,4 +31,15 @@
     <string name="possible_duplicate">Possible duplicate</string>
     <string name="possible_duplicate_message">A similar transaction was just saved. Save this one too?</string>
     <string name="save_anyway">Save anyway</string>
+    <string name="dashboard_title">Your month at a glance</string>
+    <string name="monthly_balance">Monthly balance</string>
+    <string name="monthly_budget">Monthly budget</string>
+    <string name="budget_setup_prompt">Optional: set a budget to see your monthly progress.</string>
+    <string name="recent_transactions">Recent transactions</string>
+    <string name="monthly_savings">Savings / deficit</string>
+    <string name="previous_month_change">Change from previous month</string>
+    <string name="by_category">Expenses by category</string>
+    <string name="by_payment_method">Expenses by payment method</string>
+    <string name="no_expenses_this_month">No expenses this month.</string>
+    <string name="uncategorized">Uncategorized</string>
 </resources>

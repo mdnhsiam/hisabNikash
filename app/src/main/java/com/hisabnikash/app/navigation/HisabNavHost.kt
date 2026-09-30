@@ -40,6 +40,10 @@ import com.hisabnikash.app.feature.transactions.QuickEntryViewModel
 import com.hisabnikash.app.feature.transactions.SubmitResult
 import com.hisabnikash.app.feature.transactions.TransactionListScreen
 import com.hisabnikash.app.feature.transactions.TransactionListViewModel
+import com.hisabnikash.app.feature.dashboard.DashboardScreen
+import com.hisabnikash.app.feature.dashboard.DashboardViewModel
+import com.hisabnikash.app.feature.reports.ReportsScreen
+import com.hisabnikash.app.feature.reports.ReportsViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +71,16 @@ fun HisabNavHost(container: AppContainer) {
     val transactionListViewModel: TransactionListViewModel = viewModel(
         factory = remember(container) {
             viewModelFactory { initializer { TransactionListViewModel(container.transactionRepository) } }
+        },
+    )
+    val dashboardViewModel: DashboardViewModel = viewModel(
+        factory = remember(container) {
+            viewModelFactory { initializer { DashboardViewModel(container.transactionRepository) } }
+        },
+    )
+    val reportsViewModel: ReportsViewModel = viewModel(
+        factory = remember(container) {
+            viewModelFactory { initializer { ReportsViewModel(container.transactionRepository) } }
         },
     )
 
@@ -106,7 +120,10 @@ fun HisabNavHost(container: AppContainer) {
             startDestination = Route.Dashboard.path,
             modifier = Modifier.padding(padding),
         ) {
-            composable(Route.Dashboard.path) { PlaceholderScreen(Route.Dashboard) }
+            composable(Route.Dashboard.path) {
+                val state by dashboardViewModel.state.collectAsState()
+                DashboardScreen(state)
+            }
             composable(Route.Transactions.path) {
                 val state by transactionListViewModel.state.collectAsState()
                 TransactionListScreen(
@@ -116,7 +133,10 @@ fun HisabNavHost(container: AppContainer) {
                     onDelete = transactionListViewModel::delete,
                 )
             }
-            composable(Route.Reports.path) { PlaceholderScreen(Route.Reports) }
+            composable(Route.Reports.path) {
+                val state by reportsViewModel.state.collectAsState()
+                ReportsScreen(state, reportsViewModel::previousMonth, reportsViewModel::nextMonth)
+            }
             composable(Route.Savings.path) { PlaceholderScreen(Route.Savings) }
             composable(Route.Settings.path) { PlaceholderScreen(Route.Settings) }
         }
