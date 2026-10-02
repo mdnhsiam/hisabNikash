@@ -27,6 +27,9 @@ import com.hisabnikash.app.backup.crypto.AndroidBackupSecretStore
 import com.hisabnikash.app.backup.crypto.BackupPasswordCache
 import com.hisabnikash.app.backup.local.DocumentTreeAccess
 import com.hisabnikash.app.backup.local.LocalBackupStore
+import com.hisabnikash.app.backup.drive.DriveAuthorizationClient
+import com.hisabnikash.app.backup.drive.DriveBackupStore
+import com.hisabnikash.app.backup.drive.DriveRestClient
 
 class AppContainer(
     val applicationContext: Context,
@@ -34,7 +37,10 @@ class AppContainer(
     val database: HisabDatabase by lazy { HisabDatabase.create(applicationContext) }
     val userPreferences: UserPreferences by lazy { UserPreferences.create(applicationContext) }
     val backupScheduler: BackupScheduler by lazy { BackupScheduler(WorkManagerBackupGateway(applicationContext)) }
-    private val onDataChanged: () -> Unit = { backupScheduler.onDataChanged() }
+    private val onDataChanged: () -> Unit = {
+        backupScheduler.onDataChanged()
+        backupScheduler.onCloudDataChanged()
+    }
     val transactionRepository: TransactionRepository by lazy { RoomTransactionRepository(database, onDataChanged) }
     val categoryRepository: CategoryRepository by lazy { RoomCategoryRepository(database.categoryDao(), onDataChanged) }
     val paymentMethodPreference: PaymentMethodPreference by lazy { userPreferences }
@@ -53,6 +59,10 @@ class AppContainer(
             snapshotImporter,
             backupPasswordCache,
         )
+    }
+    val driveAuthorizationClient: DriveAuthorizationClient by lazy { DriveAuthorizationClient(applicationContext) }
+    val driveBackupStore: DriveBackupStore by lazy {
+        DriveBackupStore(DriveRestClient(), snapshotExporter, snapshotImporter)
     }
     val dataDeletionUseCase: DataDeletionUseCase by lazy {
         DataDeletionUseCase(

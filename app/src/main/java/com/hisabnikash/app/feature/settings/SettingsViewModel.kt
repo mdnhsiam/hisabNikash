@@ -13,6 +13,13 @@ import android.net.Uri
 import com.hisabnikash.app.R
 import com.hisabnikash.app.backup.RestoreResult
 import com.hisabnikash.app.backup.local.LocalBackupStore
+import android.app.Activity
+import android.app.PendingIntent
+import android.content.Intent
+import com.hisabnikash.app.backup.crypto.BackupPasswordCache
+import com.hisabnikash.app.backup.drive.DriveAuthorizationClient
+import com.hisabnikash.app.backup.drive.DriveAuthorizationResult
+import com.hisabnikash.app.backup.drive.DriveBackupStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -20,6 +27,9 @@ class SettingsViewModel(
     private val preferences: UserPreferences,
     private val dataDeletion: DataDeletionUseCase,
     private val localBackupStore: LocalBackupStore,
+    private val driveAuthorization: DriveAuthorizationClient,
+    private val driveBackupStore: DriveBackupStore,
+    private val passwordCache: BackupPasswordCache,
 ) : ViewModel() {
     val state: StateFlow<UserPreferenceState> = preferences.state.stateIn(
         viewModelScope,
@@ -28,6 +38,9 @@ class SettingsViewModel(
     )
     private val mutableBackupMessage = MutableStateFlow<Int?>(null)
     val backupMessage = mutableBackupMessage.asStateFlow()
+    private val mutableDriveResolution = MutableStateFlow<PendingIntent?>(null)
+    val driveResolution = mutableDriveResolution.asStateFlow()
+    private var driveAccessToken: String? = null
 
     fun setLanguage(language: AppLanguage, onApplied: () -> Unit) {
         viewModelScope.launch {
@@ -76,6 +89,68 @@ class SettingsViewModel(
         viewModelScope.launch {
             localBackupStore.disable()
             mutableBackupMessage.value = R.string.local_backup_disabled
+        }
+    }
+
+    fun authorizeDrive(activity: Activity) {
+        viewModelScope.launch { handleDriveAuthorization(driveAuthorization.authorizeDriveAppData(activity)) }
+    }
+
+    fun completeDriveAuthorization(data: Intent?) {
+        if (data == null) {
+            mutableBackupMessage.value = R.string.drive_auth_failed
+            return
+        }
+        handleDriveAuthorization(driveAuthorization.completeResolution(data))
+    }
+
+    private fun handleDriveAuthorization(result: DriveAuthorizationResult) {
+        when (result) {
+            is DriveAuthorizationResult.Authorized -> {
+                driveAccessToken = result.accessToken
+                mutableDriveResolution.value = null
+                viewModelScope.launch { preferences.setDriveBackupEnabled(true) }
+                mutableBackupMessage.value = R.string.drive_connected
+            }
+            is DriveAuthorizationResult.ResolutionRequired -> mutableDriveResolution.value = result.pendingIntent
+            is DriveAuthorizationResult.Failed -> mutableBackupMessage.value = R.string.drive_auth_failed
+        }
+    }
+
+    fun driveBackUpNow(password: CharArray) {
+        viewModelScope.launch {
+            val token = driveAccessToken ?: driveAuthorization.currentAccessToken()
+            mutableBackupMessage.value = if (token == null) {
+                R.string.drive_reconnect
+            } else {
+                runCatching {
+                    driveBackupStore.backUpNow(token, password)
+                    passwordCache.save(password)
+                }.fold({ R.string.drive_backup_success }, { R.string.drive_backup_failed })
+            }
+            password.fill('\u0000')
+        }
+    }
+
+    fun driveRestoreLatest(password: CharArray) {
+        viewModelScope.launch {
+            val token = driveAccessToken ?: driveAuthorization.currentAccessToken()
+            mutableBackupMessage.value = if (token == null) R.string.drive_reconnect else runCatching {
+                driveBackupStore.restoreLatest(token, password)
+            }.fold(
+                { result -> if (result is RestoreResult.Success) R.string.restore_success else R.string.restore_failed },
+                { R.string.restore_failed },
+            )
+            password.fill('\u0000')
+        }
+    }
+
+    fun disconnectDrive() {
+        viewModelScope.launch {
+            runCatching { driveAuthorization.revoke() }
+            driveAccessToken = null
+            preferences.setDriveBackupEnabled(false)
+            mutableBackupMessage.value = R.string.drive_disconnected
         }
     }
 }

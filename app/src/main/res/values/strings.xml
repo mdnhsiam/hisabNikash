@@ -114,4 +114,16 @@
     <string name="restore_success">Backup restored successfully.</string>
     <string name="restore_failed">Restore failed. Current data was not changed.</string>
     <string name="local_backup_disabled">Phone-folder backup disabled.</string>
+    <string name="drive_backup_title">Google Drive backup</string>
+    <string name="drive_backup_explanation">Optional. Your encrypted backup is stored in your own Google Drive app-data area and is not visible to this app\'s developer. Only this app can access its private app-data file.</string>
+    <string name="connect_google_drive">Connect Google Drive</string>
+    <string name="drive_back_up_now">Back up to Drive</string>
+    <string name="drive_restore_latest">Restore latest</string>
+    <string name="disconnect_drive">Disconnect Google Drive</string>
+    <string name="drive_auth_failed">Google Drive could not be connected.</string>
+    <string name="drive_connected">Google Drive backup connected.</string>
+    <string name="drive_reconnect">Reconnect Google Drive to continue.</string>
+    <string name="drive_backup_success">Encrypted Drive backup saved.</string>
+    <string name="drive_backup_failed">Drive backup failed. Check your connection and try again.</string>
+    <string name="drive_disconnected">Google Drive backup disconnected.</string>
 </resources>

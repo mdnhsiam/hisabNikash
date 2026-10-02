@@ -114,4 +114,16 @@
     <string name="restore_success">ব্যাকআপ সফলভাবে রিস্টোর হয়েছে।</string>
     <string name="restore_failed">রিস্টোর হয়নি। বর্তমান ডাটা পরিবর্তন করা হয়নি।</string>
     <string name="local_backup_disabled">ফোন-ফোল্ডার ব্যাকআপ বন্ধ হয়েছে।</string>
+    <string name="drive_backup_title">Google Drive ব্যাকআপ</string>
+    <string name="drive_backup_explanation">ঐচ্ছিক। এনক্রিপ্টেড ব্যাকআপ আপনার নিজের Google Drive-এর ব্যক্তিগত app-data অংশে থাকে; অ্যাপ নির্মাতা এটি দেখতে পারে না। শুধু এই অ্যাপ তার ব্যক্তিগত ফাইল ব্যবহার করতে পারে।</string>
+    <string name="connect_google_drive">Google Drive যুক্ত করুন</string>
+    <string name="drive_back_up_now">Drive-এ ব্যাকআপ নিন</string>
+    <string name="drive_restore_latest">সর্বশেষ ব্যাকআপ রিস্টোর</string>
+    <string name="disconnect_drive">Google Drive বিচ্ছিন্ন করুন</string>
+    <string name="drive_auth_failed">Google Drive যুক্ত করা যায়নি।</string>
+    <string name="drive_connected">Google Drive ব্যাকআপ যুক্ত হয়েছে।</string>
+    <string name="drive_reconnect">চালিয়ে যেতে Google Drive আবার যুক্ত করুন।</string>
+    <string name="drive_backup_success">এনক্রিপ্টেড Drive ব্যাকআপ সেভ হয়েছে।</string>
+    <string name="drive_backup_failed">Drive ব্যাকআপ হয়নি। ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন।</string>
+    <string name="drive_disconnected">Google Drive ব্যাকআপ বিচ্ছিন্ন হয়েছে।</string>
 </resources>

@@ -39,6 +39,10 @@ fun SettingsScreen(
     onRestore: (String, CharArray) -> Unit,
     onDismissRestore: () -> Unit,
     onDisableLocalBackup: () -> Unit,
+    onConnectDrive: () -> Unit,
+    onDriveBackUpNow: (CharArray) -> Unit,
+    onDriveRestoreLatest: (CharArray) -> Unit,
+    onDisconnectDrive: () -> Unit,
     modifier: Modifier = Modifier,
     recurringContent: @Composable () -> Unit = {},
 ) {
@@ -46,6 +50,8 @@ fun SettingsScreen(
     var showBackupPassword by remember { mutableStateOf(false) }
     var password by remember { mutableStateOf("") }
     var restorePassword by remember(restoreDocumentUri) { mutableStateOf("") }
+    var drivePasswordAction by remember { mutableStateOf<DrivePasswordAction?>(null) }
+    var drivePassword by remember { mutableStateOf("") }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
         Text(stringResource(R.string.language), style = MaterialTheme.typography.titleMedium)
@@ -78,6 +84,22 @@ fun SettingsScreen(
             Button(onClick = onChooseBackupLocation) { Text(stringResource(R.string.choose_backup_folder)) }
         }
         TextButton(onClick = onChooseRestoreDocument) { Text(stringResource(R.string.restore_from_backup)) }
+
+        Text(stringResource(R.string.drive_backup_title), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.drive_backup_explanation), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (state.driveBackupEnabled) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { drivePasswordAction = DrivePasswordAction.BACKUP }) {
+                    Text(stringResource(R.string.drive_back_up_now))
+                }
+                TextButton(onClick = { drivePasswordAction = DrivePasswordAction.RESTORE }) {
+                    Text(stringResource(R.string.drive_restore_latest))
+                }
+            }
+            TextButton(onClick = onDisconnectDrive) { Text(stringResource(R.string.disconnect_drive)) }
+        } else {
+            Button(onClick = onConnectDrive) { Text(stringResource(R.string.connect_google_drive)) }
+        }
         backupMessageRes?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.primary) }
         recurringContent()
 
@@ -126,7 +148,24 @@ fun SettingsScreen(
             onDismiss = { restorePassword = ""; onDismissRestore() },
         )
     }
+
+    drivePasswordAction?.let { action ->
+        PasswordDialog(
+            titleRes = if (action == DrivePasswordAction.BACKUP) R.string.backup_password else R.string.restore_password,
+            password = drivePassword,
+            onPasswordChange = { drivePassword = it },
+            onConfirm = {
+                val value = drivePassword.toCharArray()
+                if (action == DrivePasswordAction.BACKUP) onDriveBackUpNow(value) else onDriveRestoreLatest(value)
+                drivePassword = ""
+                drivePasswordAction = null
+            },
+            onDismiss = { drivePassword = ""; drivePasswordAction = null },
+        )
+    }
 }
+
+private enum class DrivePasswordAction { BACKUP, RESTORE }
 
 @Composable
 private fun LanguageOption(labelRes: Int, selected: Boolean, onSelect: () -> Unit) {

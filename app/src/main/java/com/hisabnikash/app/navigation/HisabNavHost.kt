@@ -2,6 +2,7 @@ package com.hisabnikash.app.navigation
 
 import android.Manifest
 import android.app.Activity
+import androidx.activity.result.IntentSenderRequest
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -24,6 +25,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -168,7 +170,16 @@ fun HisabNavHost(container: AppContainer) {
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = remember(container) {
             viewModelFactory {
-                initializer { SettingsViewModel(container.userPreferences, container.dataDeletionUseCase, container.localBackupStore) }
+                initializer {
+                    SettingsViewModel(
+                        container.userPreferences,
+                        container.dataDeletionUseCase,
+                        container.localBackupStore,
+                        container.driveAuthorizationClient,
+                        container.driveBackupStore,
+                        container.backupPasswordCache,
+                    )
+                }
             }
         },
     )
@@ -177,6 +188,15 @@ fun HisabNavHost(container: AppContainer) {
     }
     val restoreDocumentLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         restoreDocumentUri = uri?.toString()
+    }
+    val driveResolution by settingsViewModel.driveResolution.collectAsState()
+    val driveAuthorizationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        settingsViewModel.completeDriveAuthorization(if (result.resultCode == Activity.RESULT_OK) result.data else null)
+    }
+    LaunchedEffect(driveResolution) {
+        driveResolution?.let { pendingIntent ->
+            driveAuthorizationLauncher.launch(IntentSenderRequest.Builder(pendingIntent.intentSender).build())
+        }
     }
 
     Scaffold(
@@ -275,6 +295,10 @@ fun HisabNavHost(container: AppContainer) {
                     onRestore = { uri, password -> settingsViewModel.restore(uri.toUri(), password) },
                     onDismissRestore = { restoreDocumentUri = null },
                     onDisableLocalBackup = settingsViewModel::disableLocalBackup,
+                    onConnectDrive = { (context as? Activity)?.let(settingsViewModel::authorizeDrive) },
+                    onDriveBackUpNow = settingsViewModel::driveBackUpNow,
+                    onDriveRestoreLatest = settingsViewModel::driveRestoreLatest,
+                    onDisconnectDrive = settingsViewModel::disconnectDrive,
                     modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
                     recurringContent = {
                         RecurringScreen(
