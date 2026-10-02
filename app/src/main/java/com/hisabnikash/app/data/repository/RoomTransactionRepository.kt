@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.map
 
 class RoomTransactionRepository(
     private val database: HisabDatabase,
+    private val onDataChanged: () -> Unit = {},
 ) : TransactionRepository {
     private val transactionDao = database.transactionDao()
 
@@ -19,6 +20,7 @@ class RoomTransactionRepository(
     override suspend fun add(transaction: Transaction) {
         validate(transaction)
         transactionDao.insert(transaction.toEntity())
+        onDataChanged()
     }
 
     override suspend fun addWithCustomCategory(transaction: Transaction, category: Category) {
@@ -28,18 +30,21 @@ class RoomTransactionRepository(
             database.categoryDao().insert(category.toEntity())
             transactionDao.insert(transaction.toEntity())
         }
+        onDataChanged()
     }
 
     override suspend fun update(transaction: Transaction) {
         validate(transaction)
         transactionDao.update(transaction.toEntity())
+        onDataChanged()
     }
 
     override suspend fun delete(id: String) {
         transactionDao.deleteById(id)
+        onDataChanged()
     }
 
-    override suspend fun clearAll() = transactionDao.deleteAll()
+    override suspend fun clearAll() { transactionDao.deleteAll(); onDataChanged() }
 
     override suspend fun findPossibleDuplicate(candidate: Transaction): Transaction? =
         transactionDao.findPossibleDuplicate(

@@ -17,6 +17,7 @@ class RoomRecurringRepository(
     private val transactionRepository: TransactionRepository,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
     private val newId: () -> String = { UUID.randomUUID().toString() },
+    private val onDataChanged: () -> Unit = {},
 ) : RecurringRepository {
     private val dao = database.recurringDao()
 
@@ -27,10 +28,11 @@ class RoomRecurringRepository(
         require(item.amountMinor > 0)
         require(item.description.isNotBlank())
         dao.upsert(item.toEntity())
+        onDataChanged()
     }
 
-    override suspend fun delete(id: String) = dao.deleteById(id)
-    override suspend fun clearAll() = dao.deleteAll()
+    override suspend fun delete(id: String) { dao.deleteById(id); onDataChanged() }
+    override suspend fun clearAll() { dao.deleteAll(); onDataChanged() }
 
     override suspend fun confirmOccurrence(id: String, edits: RecurringEditor?): Transaction {
         val now = nowEpochMillis()
@@ -42,17 +44,20 @@ class RoomRecurringRepository(
             dao.upsert(item.copy(nextDueAtEpochMillis = RecurringDatePolicy.nextDue(item.nextDueAtEpochMillis, now), updatedAtEpochMillis = now).toEntity())
             transaction
         }
+            .also { onDataChanged() }
     }
 
     override suspend fun skipOccurrence(id: String) {
         val now = nowEpochMillis()
         val item = requireNotNull(find(id))
         dao.upsert(item.copy(nextDueAtEpochMillis = RecurringDatePolicy.nextDue(item.nextDueAtEpochMillis, now), updatedAtEpochMillis = now).toEntity())
+        onDataChanged()
     }
 
     override suspend fun disable(id: String) {
         val item = requireNotNull(find(id))
         dao.upsert(item.copy(isEnabled = false, updatedAtEpochMillis = nowEpochMillis()).toEntity())
+        onDataChanged()
     }
 }
 

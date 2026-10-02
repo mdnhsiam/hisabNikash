@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.map
 
 class RoomCategoryRepository(
     private val categoryDao: CategoryDao,
+    private val onDataChanged: () -> Unit = {},
 ) : CategoryRepository {
     override fun observeActive(type: CategoryType): Flow<List<Category>> =
         categoryDao.observeActive(type).map { rows -> rows.map(CategoryEntity::toDomain) }
@@ -16,19 +17,23 @@ class RoomCategoryRepository(
     override suspend fun add(category: Category) {
         require(!category.isSystem) { "Custom categories cannot be marked as system categories" }
         categoryDao.insert(category.toEntity())
+        onDataChanged()
     }
 
     override suspend fun update(category: Category) {
         categoryDao.update(category.toEntity())
+        onDataChanged()
     }
 
     override suspend fun archive(id: String) {
         categoryDao.archive(id)
+        onDataChanged()
     }
 
     override suspend fun clearAll() {
         categoryDao.deleteCustomCategories()
         categoryDao.reactivateSystemCategories()
+        onDataChanged()
     }
 }
 

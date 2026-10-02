@@ -43,6 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -93,6 +94,7 @@ fun HisabNavHost(container: AppContainer) {
     val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         notificationPermissionGranted = granted
     }
+    var restoreDocumentUri by remember { mutableStateOf<String?>(null) }
     val quickEntryViewModel: QuickEntryViewModel = viewModel(
         factory = remember(container) {
             viewModelFactory {
@@ -166,10 +168,16 @@ fun HisabNavHost(container: AppContainer) {
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = remember(container) {
             viewModelFactory {
-                initializer { SettingsViewModel(container.userPreferences, container.dataDeletionUseCase) }
+                initializer { SettingsViewModel(container.userPreferences, container.dataDeletionUseCase, container.localBackupStore) }
             }
         },
     )
+    val backupFolderLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        uri?.let(settingsViewModel::chooseBackupLocation)
+    }
+    val restoreDocumentLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        restoreDocumentUri = uri?.toString()
+    }
 
     Scaffold(
         bottomBar = {
@@ -251,6 +259,7 @@ fun HisabNavHost(container: AppContainer) {
             composable(Route.Settings.path) {
                 val recurringState by recurringViewModel.state.collectAsState()
                 val settingsState by settingsViewModel.state.collectAsState()
+                val backupMessage by settingsViewModel.backupMessage.collectAsState()
                 SettingsScreen(
                     state = settingsState,
                     onLanguageChange = { language ->
@@ -258,6 +267,14 @@ fun HisabNavHost(container: AppContainer) {
                     },
                     onDismissGuestWarning = settingsViewModel::dismissGuestWarning,
                     onDeleteAllData = settingsViewModel::deleteAllLocalData,
+                    backupMessageRes = backupMessage,
+                    restoreDocumentUri = restoreDocumentUri,
+                    onChooseBackupLocation = { backupFolderLauncher.launch(null) },
+                    onBackUpNow = settingsViewModel::backUpNow,
+                    onChooseRestoreDocument = { restoreDocumentLauncher.launch(arrayOf("application/octet-stream", "application/json", "*/*")) },
+                    onRestore = { uri, password -> settingsViewModel.restore(uri.toUri(), password) },
+                    onDismissRestore = { restoreDocumentUri = null },
+                    onDisableLocalBackup = settingsViewModel::disableLocalBackup,
                     modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
                     recurringContent = {
                         RecurringScreen(

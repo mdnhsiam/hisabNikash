@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,10 +31,21 @@ fun SettingsScreen(
     onLanguageChange: (AppLanguage) -> Unit,
     onDismissGuestWarning: () -> Unit,
     onDeleteAllData: () -> Unit,
+    backupMessageRes: Int?,
+    restoreDocumentUri: String?,
+    onChooseBackupLocation: () -> Unit,
+    onBackUpNow: (CharArray) -> Unit,
+    onChooseRestoreDocument: () -> Unit,
+    onRestore: (String, CharArray) -> Unit,
+    onDismissRestore: () -> Unit,
+    onDisableLocalBackup: () -> Unit,
     modifier: Modifier = Modifier,
     recurringContent: @Composable () -> Unit = {},
 ) {
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showBackupPassword by remember { mutableStateOf(false) }
+    var password by remember { mutableStateOf("") }
+    var restorePassword by remember(restoreDocumentUri) { mutableStateOf("") }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
         Text(stringResource(R.string.language), style = MaterialTheme.typography.titleMedium)
@@ -54,7 +66,19 @@ fun SettingsScreen(
         }
 
         Text(stringResource(R.string.backup_title), style = MaterialTheme.typography.titleMedium)
-        Text(stringResource(R.string.backup_setup_later), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.local_backup_risk), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (state.localBackupEnabled) {
+            Text(stringResource(R.string.local_backup_enabled))
+            state.lastLocalBackupAtEpochMillis?.let { Text(stringResource(R.string.last_backup_time, java.text.DateFormat.getDateTimeInstance().format(java.util.Date(it)))) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { showBackupPassword = true }) { Text(stringResource(R.string.back_up_now)) }
+                TextButton(onClick = onDisableLocalBackup) { Text(stringResource(R.string.disable_backup)) }
+            }
+        } else {
+            Button(onClick = onChooseBackupLocation) { Text(stringResource(R.string.choose_backup_folder)) }
+        }
+        TextButton(onClick = onChooseRestoreDocument) { Text(stringResource(R.string.restore_from_backup)) }
+        backupMessageRes?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.primary) }
         recurringContent()
 
         Text(stringResource(R.string.privacy_title), style = MaterialTheme.typography.titleMedium)
@@ -78,6 +102,30 @@ fun SettingsScreen(
             },
         )
     }
+
+    if (showBackupPassword) {
+        PasswordDialog(
+            titleRes = R.string.backup_password,
+            password = password,
+            onPasswordChange = { password = it },
+            onConfirm = {
+                onBackUpNow(password.toCharArray())
+                password = ""
+                showBackupPassword = false
+            },
+            onDismiss = { password = ""; showBackupPassword = false },
+        )
+    }
+
+    restoreDocumentUri?.let { uri ->
+        PasswordDialog(
+            titleRes = R.string.restore_password,
+            password = restorePassword,
+            onPasswordChange = { restorePassword = it },
+            onConfirm = { onRestore(uri, restorePassword.toCharArray()); restorePassword = ""; onDismissRestore() },
+            onDismiss = { restorePassword = ""; onDismissRestore() },
+        )
+    }
 }
 
 @Composable
@@ -86,4 +134,26 @@ private fun LanguageOption(labelRes: Int, selected: Boolean, onSelect: () -> Uni
         RadioButton(selected = selected, onClick = onSelect)
         Text(stringResource(labelRes), modifier = Modifier.padding(top = 12.dp))
     }
+}
+
+@Composable
+private fun PasswordDialog(
+    titleRes: Int,
+    password: String,
+    onPasswordChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(titleRes)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(password, onPasswordChange, label = { Text(stringResource(R.string.password)) })
+                Text(stringResource(R.string.password_warning), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        confirmButton = { Button(onClick = onConfirm, enabled = password.length >= 8) { Text(stringResource(R.string.confirm)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }

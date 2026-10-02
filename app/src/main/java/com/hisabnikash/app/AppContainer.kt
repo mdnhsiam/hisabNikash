@@ -19,19 +19,41 @@ import com.hisabnikash.app.feature.recurring.WorkManagerRecurringGateway
 import androidx.room.withTransaction
 import com.hisabnikash.app.data.preferences.UserPreferences
 import com.hisabnikash.app.feature.settings.DataDeletionUseCase
+import com.hisabnikash.app.backup.BackupScheduler
+import com.hisabnikash.app.backup.SnapshotExporter
+import com.hisabnikash.app.backup.SnapshotImporter
+import com.hisabnikash.app.backup.WorkManagerBackupGateway
+import com.hisabnikash.app.backup.crypto.AndroidBackupSecretStore
+import com.hisabnikash.app.backup.crypto.BackupPasswordCache
+import com.hisabnikash.app.backup.local.DocumentTreeAccess
+import com.hisabnikash.app.backup.local.LocalBackupStore
 
 class AppContainer(
     val applicationContext: Context,
 ) {
     val database: HisabDatabase by lazy { HisabDatabase.create(applicationContext) }
     val userPreferences: UserPreferences by lazy { UserPreferences.create(applicationContext) }
-    val transactionRepository: TransactionRepository by lazy { RoomTransactionRepository(database) }
-    val categoryRepository: CategoryRepository by lazy { RoomCategoryRepository(database.categoryDao()) }
+    val backupScheduler: BackupScheduler by lazy { BackupScheduler(WorkManagerBackupGateway(applicationContext)) }
+    private val onDataChanged: () -> Unit = { backupScheduler.onDataChanged() }
+    val transactionRepository: TransactionRepository by lazy { RoomTransactionRepository(database, onDataChanged) }
+    val categoryRepository: CategoryRepository by lazy { RoomCategoryRepository(database.categoryDao(), onDataChanged) }
     val paymentMethodPreference: PaymentMethodPreference by lazy { userPreferences }
-    val budgetRepository: BudgetRepository by lazy { RoomBudgetRepository(database) }
-    val savingsRepository: SavingsRepository by lazy { RoomSavingsRepository(database) }
-    val recurringRepository: RecurringRepository by lazy { RoomRecurringRepository(database, transactionRepository) }
+    val budgetRepository: BudgetRepository by lazy { RoomBudgetRepository(database, onDataChanged) }
+    val savingsRepository: SavingsRepository by lazy { RoomSavingsRepository(database, onDataChanged) }
+    val recurringRepository: RecurringRepository by lazy { RoomRecurringRepository(database, transactionRepository, onDataChanged = onDataChanged) }
     val recurringScheduler: RecurringScheduler by lazy { RecurringScheduler(WorkManagerRecurringGateway(applicationContext)) }
+    val backupPasswordCache: BackupPasswordCache by lazy { AndroidBackupSecretStore(applicationContext) }
+    val snapshotExporter: SnapshotExporter by lazy { SnapshotExporter(database) }
+    val snapshotImporter: SnapshotImporter by lazy { SnapshotImporter(database) }
+    val localBackupStore: LocalBackupStore by lazy {
+        LocalBackupStore(
+            DocumentTreeAccess(applicationContext),
+            userPreferences,
+            snapshotExporter,
+            snapshotImporter,
+            backupPasswordCache,
+        )
+    }
     val dataDeletionUseCase: DataDeletionUseCase by lazy {
         DataDeletionUseCase(
             repositories = listOf(

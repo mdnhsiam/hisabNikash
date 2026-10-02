@@ -74,7 +74,6 @@
     <string name="guest_data_warning">আপনার তথ্য এখন শুধু এই অ্যাপের ভেতরে আছে। অ্যাপ আনইনস্টল, অ্যাপের ডাটা মুছে ফেলা বা ফোন হারালে তথ্য স্থায়ীভাবে হারাতে পারে। ফোন ফোল্ডার ও Google Drive ব্যাকআপ ঐচ্ছিক এবং আপনার নিজের নিয়ন্ত্রণে থাকবে।</string>
     <string name="got_it">বুঝেছি</string>
     <string name="backup_title">ব্যাকআপ ও রিস্টোর</string>
-    <string name="backup_setup_later">কনফিগার করা হলে এনক্রিপ্টেড ফোন ফোল্ডার ও আপনার নিজের Google Drive ব্যাকআপের কন্ট্রোল এখানে দেখা যাবে।</string>
     <string name="privacy_title">গোপনীয়তা ও ডাটা</string>
     <string name="delete_all_data_explanation">এই ডিভাইস থেকে লেনদেন, কাস্টম ক্যাটাগরি, বাজেট, সঞ্চয়ের লক্ষ্য, নিয়মিত রিমাইন্ডার ও ব্যক্তিগত ব্যাকআপ সেটিংস মুছুন।</string>
     <string name="delete_all_data">সব লোকাল ডাটা মুছুন</string>
@@ -97,4 +96,22 @@
     <string name="previous_month">আগের মাস</string>
     <string name="next_month">পরের মাস</string>
     <string name="add_transaction">লেনদেন যোগ করুন</string>
+    <string name="local_backup_risk">আপনার নিয়ন্ত্রণে থাকা একটি ফোল্ডার বেছে নিন। এনক্রিপ্টেড ব্যাকআপ অ্যাপ আনইনস্টলের পরও থাকবে, তবে ডিভাইস রিসেট, স্টোরেজ নষ্ট হওয়া বা ফাইল মুছলে এটি হারাতে পারে। ভুলে যাওয়া পাসওয়ার্ড ফেরত পাওয়া যাবে না।</string>
+    <string name="local_backup_enabled">এনক্রিপ্টেড ফোন-ফোল্ডার ব্যাকআপ চালু আছে।</string>
+    <string name="choose_backup_folder">ব্যাকআপ ফোল্ডার বেছে নিন</string>
+    <string name="back_up_now">এখন ব্যাকআপ নিন</string>
+    <string name="disable_backup">ব্যাকআপ বন্ধ করুন</string>
+    <string name="restore_from_backup">ব্যাকআপ ফাইল থেকে রিস্টোর</string>
+    <string name="last_backup_time">সর্বশেষ ব্যাকআপ: %1$s</string>
+    <string name="backup_password">ব্যাকআপ পাসওয়ার্ড</string>
+    <string name="restore_password">রিস্টোর পাসওয়ার্ড</string>
+    <string name="password">পাসওয়ার্ড</string>
+    <string name="password_warning">কমপক্ষে ৮ অক্ষর ব্যবহার করুন। সার্ভারবিহীন এই অ্যাপ ভুলে যাওয়া ব্যাকআপ পাসওয়ার্ড ফিরিয়ে দিতে পারবে না।</string>
+    <string name="backup_location_saved">ব্যাকআপ ফোল্ডার যুক্ত হয়েছে।</string>
+    <string name="backup_location_error">ফোল্ডারটি ব্যবহার করা যায়নি।</string>
+    <string name="backup_success">এনক্রিপ্টেড ব্যাকআপ সেভ হয়েছে।</string>
+    <string name="backup_failed">ব্যাকআপ হয়নি। ফোল্ডার ও পাসওয়ার্ড পরীক্ষা করুন।</string>
+    <string name="restore_success">ব্যাকআপ সফলভাবে রিস্টোর হয়েছে।</string>
+    <string name="restore_failed">রিস্টোর হয়নি। বর্তমান ডাটা পরিবর্তন করা হয়নি।</string>
+    <string name="local_backup_disabled">ফোন-ফোল্ডার ব্যাকআপ বন্ধ হয়েছে।</string>
 </resources>

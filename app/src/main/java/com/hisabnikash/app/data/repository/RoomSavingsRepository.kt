@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.map
 
 class RoomSavingsRepository(
     private val database: HisabDatabase,
+    private val onDataChanged: () -> Unit = {},
 ) : SavingsRepository {
     private val dao = database.savingsDao()
 
@@ -21,9 +22,10 @@ class RoomSavingsRepository(
         require(goal.name.isNotBlank())
         require(goal.targetMinor == null || goal.targetMinor > 0)
         dao.upsertGoal(goal.toEntity())
+        onDataChanged()
     }
 
-    override suspend fun archiveGoal(id: String, updatedAtEpochMillis: Long) = dao.archiveGoal(id, updatedAtEpochMillis)
+    override suspend fun archiveGoal(id: String, updatedAtEpochMillis: Long) { dao.archiveGoal(id, updatedAtEpochMillis); onDataChanged() }
 
     override suspend fun allocate(allocation: GoalAllocation, availableSavingsMinor: Long) {
         require(allocation.amountMinor > 0) { "Allocation must be positive" }
@@ -33,6 +35,7 @@ class RoomSavingsRepository(
             require(!goal.isArchived) { "Goal is archived" }
             dao.insertAllocation(allocation.toEntity())
         }
+        onDataChanged()
     }
 
     override suspend fun reverse(allocationId: String, reversalId: String, atEpochMillis: Long) {
@@ -50,6 +53,7 @@ class RoomSavingsRepository(
                 ),
             )
         }
+        onDataChanged()
     }
 
     override suspend fun clearAll() {
@@ -57,6 +61,7 @@ class RoomSavingsRepository(
             dao.deleteAllAllocations()
             dao.deleteAllGoals()
         }
+        onDataChanged()
     }
 }
 
