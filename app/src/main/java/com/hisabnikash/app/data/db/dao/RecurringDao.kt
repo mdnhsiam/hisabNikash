@@ -13,6 +13,9 @@ interface RecurringDao {
     @Query("SELECT * FROM recurring_items ORDER BY nextDueAtEpochMillis")
     fun observeAll(): Flow<List<RecurringItemEntity>>
 
+    @Query("SELECT * FROM recurring_items WHERE id = :id")
+    suspend fun findById(id: String): RecurringItemEntity?
+
     @Query("SELECT * FROM recurring_items WHERE isEnabled = 1 AND nextDueAtEpochMillis <= :nowEpochMillis")
     suspend fun findDue(nowEpochMillis: Long): List<RecurringItemEntity>
 
@@ -21,4 +24,7 @@ interface RecurringDao {
 
     @Delete
     suspend fun delete(item: RecurringItemEntity)
+
+    @Query("DELETE FROM recurring_items WHERE id = :id")
+    suspend fun deleteById(id: String)
 }

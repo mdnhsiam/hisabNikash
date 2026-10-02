@@ -56,4 +56,15 @@
     <string name="goal_name">Goal name</string>
     <string name="target_optional">Target amount (optional)</string>
     <string name="allocate_to_goal">Allocate to %1$s</string>
+    <string name="recurring_channel">Recurring reminders</string>
+    <string name="confirm">Confirm</string>
+    <string name="skip">Skip</string>
+    <string name="disable">Disable</string>
+    <string name="recurring_title">Recurring reminders</string>
+    <string name="add_recurring">Add reminder</string>
+    <string name="notification_permission_help">Allow notifications to receive due reminders. Recurring items still remain visible here if permission is denied.</string>
+    <string name="no_recurring">No recurring reminders yet.</string>
+    <string name="quick_confirm">Quick confirm</string>
+    <string name="open_review">Open and review</string>
+    <string name="allow_notifications">Allow notifications</string>
 </resources>

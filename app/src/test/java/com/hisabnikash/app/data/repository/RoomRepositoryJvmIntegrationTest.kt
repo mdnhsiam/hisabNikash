@@ -8,6 +8,7 @@ import com.hisabnikash.app.core.model.Transaction
 import com.hisabnikash.app.core.model.TransactionType
 import com.hisabnikash.app.core.model.GoalAllocation
 import com.hisabnikash.app.core.model.SavingsGoal
+import com.hisabnikash.app.core.model.RecurringItem
 import com.hisabnikash.app.data.db.HisabDatabase
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -85,6 +86,32 @@ class RoomRepositoryJvmIntegrationTest {
             rejected = true
         }
         assertTrue(rejected)
+    }
+
+    @Test
+    fun `recurring confirmation writes once while skip and disable never write`() = runTest {
+        val recurringRepository = RoomRecurringRepository(database, transactions, nowEpochMillis = { 1_000 }, newId = { "confirmed" })
+        val item = RecurringItem(
+            id = "bill",
+            type = TransactionType.EXPENSE,
+            amountMinor = 5_000,
+            description = "Electricity bill",
+            categoryId = "expense_bills",
+            paymentMethod = PaymentMethod.BKASH,
+            nextDueAtEpochMillis = 100,
+            createdAtEpochMillis = 0,
+        )
+        recurringRepository.upsert(item)
+
+        recurringRepository.confirmOccurrence(item.id)
+        assertEquals(1, transactions.observeAll().first().size)
+        val advanced = recurringRepository.find(item.id)!!
+        assertTrue(advanced.nextDueAtEpochMillis > 1_000)
+
+        recurringRepository.skipOccurrence(item.id)
+        recurringRepository.disable(item.id)
+        assertEquals(1, transactions.observeAll().first().size)
+        assertFalse(recurringRepository.find(item.id)!!.isEnabled)
     }
 
     private fun expense(id: String, categoryId: String) = Transaction(

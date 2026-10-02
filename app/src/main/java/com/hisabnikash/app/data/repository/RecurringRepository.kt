@@ -1,0 +1,16 @@
+package com.hisabnikash.app.data.repository
+
+import com.hisabnikash.app.core.model.RecurringItem
+import com.hisabnikash.app.core.model.Transaction
+import com.hisabnikash.app.feature.recurring.RecurringEditor
+import kotlinx.coroutines.flow.Flow
+
+interface RecurringRepository {
+    fun observeAll(): Flow<List<RecurringItem>>
+    suspend fun find(id: String): RecurringItem?
+    suspend fun upsert(item: RecurringItem)
+    suspend fun delete(id: String)
+    suspend fun confirmOccurrence(id: String, edits: RecurringEditor? = null): Transaction
+    suspend fun skipOccurrence(id: String)
+    suspend fun disable(id: String)
+}

@@ -1,5 +1,10 @@
 package com.hisabnikash.app.navigation
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,12 +32,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -52,6 +59,8 @@ import com.hisabnikash.app.feature.budgets.BudgetScreen
 import com.hisabnikash.app.feature.budgets.BudgetViewModel
 import com.hisabnikash.app.feature.savings.SavingsScreen
 import com.hisabnikash.app.feature.savings.SavingsViewModel
+import com.hisabnikash.app.feature.recurring.RecurringScreen
+import com.hisabnikash.app.feature.recurring.RecurringViewModel
 import com.hisabnikash.app.core.model.CategoryType
 import com.hisabnikash.app.core.time.MonthKey
 import com.hisabnikash.app.domain.FinanceCalculator
@@ -69,6 +78,15 @@ fun HisabNavHost(container: AppContainer) {
     var showDuplicateWarning by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val currentMonth = remember { MonthKey.fromInstant(Instant.now()) }
+    val context = LocalContext.current
+    var notificationPermissionGranted by remember {
+        mutableStateOf(
+            Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED,
+        )
+    }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        notificationPermissionGranted = granted
+    }
     val quickEntryViewModel: QuickEntryViewModel = viewModel(
         factory = remember(container) {
             viewModelFactory {
@@ -129,6 +147,13 @@ fun HisabNavHost(container: AppContainer) {
                         },
                     )
                 }
+            }
+        },
+    )
+    val recurringViewModel: RecurringViewModel = viewModel(
+        factory = remember(container) {
+            viewModelFactory {
+                initializer { RecurringViewModel(container.recurringRepository, container.recurringScheduler) }
             }
         },
     )
@@ -207,7 +232,21 @@ fun HisabNavHost(container: AppContainer) {
                     )
                 }
             }
-            composable(Route.Settings.path) { PlaceholderScreen(Route.Settings) }
+            composable(Route.Settings.path) {
+                val state by recurringViewModel.state.collectAsState()
+                RecurringScreen(
+                    state = state,
+                    notificationPermissionGranted = notificationPermissionGranted,
+                    onRequestPermission = {
+                        if (Build.VERSION.SDK_INT >= 33) notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    },
+                    onCreate = { description, amount, quick -> scope.launch { recurringViewModel.create(description, amount, quick) } },
+                    onConfirm = { id -> scope.launch { recurringViewModel.quickConfirm(id) } },
+                    onReviewConfirm = { id, editor -> scope.launch { recurringViewModel.confirmWithEdits(id, editor) } },
+                    onSkip = { id -> scope.launch { recurringViewModel.skip(id) } },
+                    onDisable = { id -> scope.launch { recurringViewModel.disable(id) } },
+                )
+            }
         }
     }
 

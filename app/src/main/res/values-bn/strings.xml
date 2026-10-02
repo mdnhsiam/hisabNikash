@@ -56,4 +56,15 @@
     <string name="goal_name">লক্ষ্যের নাম</string>
     <string name="target_optional">লক্ষ্যমাত্রা (ঐচ্ছিক)</string>
     <string name="allocate_to_goal">%1$s-এ বরাদ্দ করুন</string>
+    <string name="recurring_channel">নিয়মিত হিসাবের রিমাইন্ডার</string>
+    <string name="confirm">নিশ্চিত করুন</string>
+    <string name="skip">বাদ দিন</string>
+    <string name="disable">বন্ধ করুন</string>
+    <string name="recurring_title">নিয়মিত রিমাইন্ডার</string>
+    <string name="add_recurring">রিমাইন্ডার যোগ করুন</string>
+    <string name="notification_permission_help">সময়মতো রিমাইন্ডার পেতে নোটিফিকেশন অনুমতি দিন। অনুমতি না দিলেও নিয়মিত আইটেম এখানে দেখা যাবে।</string>
+    <string name="no_recurring">এখনও কোনো নিয়মিত রিমাইন্ডার নেই।</string>
+    <string name="quick_confirm">দ্রুত নিশ্চিত করুন</string>
+    <string name="open_review">খুলে দেখে নিন</string>
+    <string name="allow_notifications">নোটিফিকেশন অনুমতি দিন</string>
 </resources>
