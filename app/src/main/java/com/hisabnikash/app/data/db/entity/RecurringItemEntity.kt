@@ -8,6 +8,7 @@ import com.hisabnikash.app.core.model.PaymentMethod
 import com.hisabnikash.app.core.model.RecurrenceFrequency
 import com.hisabnikash.app.core.model.ReminderStyle
 import com.hisabnikash.app.core.model.TransactionType
+import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "recurring_items",
@@ -21,6 +22,7 @@ import com.hisabnikash.app.core.model.TransactionType
     ],
     indices = [Index("categoryId"), Index(value = ["isEnabled", "nextDueAtEpochMillis"])],
 )
+@Serializable
 data class RecurringItemEntity(
     @PrimaryKey val id: String,
     val type: TransactionType,

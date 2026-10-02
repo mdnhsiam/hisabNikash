@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "budgets",
@@ -17,6 +18,7 @@ import androidx.room.PrimaryKey
     ],
     indices = [Index("categoryId"), Index("monthKey")],
 )
+@Serializable
 data class BudgetEntity(
     @PrimaryKey val id: String,
     val monthKey: String,

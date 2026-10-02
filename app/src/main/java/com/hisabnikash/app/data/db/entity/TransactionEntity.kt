@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.hisabnikash.app.core.model.PaymentMethod
 import com.hisabnikash.app.core.model.TransactionType
+import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "transactions",
@@ -23,6 +24,7 @@ import com.hisabnikash.app.core.model.TransactionType
         Index(value = ["type", "amountMinor", "normalizedDescription", "paymentMethod", "createdAtEpochMillis"]),
     ],
 )
+@Serializable
 data class TransactionEntity(
     @PrimaryKey val id: String,
     val type: TransactionType,

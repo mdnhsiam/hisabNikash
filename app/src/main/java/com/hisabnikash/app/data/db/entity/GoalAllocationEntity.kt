@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "goal_allocations",
@@ -17,6 +18,7 @@ import androidx.room.PrimaryKey
     ],
     indices = [Index("goalId"), Index("allocatedAtEpochMillis"), Index(value = ["reversesAllocationId"], unique = true)],
 )
+@Serializable
 data class GoalAllocationEntity(
     @PrimaryKey val id: String,
     val goalId: String,

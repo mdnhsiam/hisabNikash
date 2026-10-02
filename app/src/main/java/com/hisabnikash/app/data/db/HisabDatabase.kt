@@ -12,6 +12,7 @@ import com.hisabnikash.app.data.db.dao.CategoryDao
 import com.hisabnikash.app.data.db.dao.RecurringDao
 import com.hisabnikash.app.data.db.dao.SavingsDao
 import com.hisabnikash.app.data.db.dao.TransactionDao
+import com.hisabnikash.app.data.db.dao.SnapshotDao
 import com.hisabnikash.app.data.db.entity.BudgetEntity
 import com.hisabnikash.app.data.db.entity.CategoryEntity
 import com.hisabnikash.app.data.db.entity.GoalAllocationEntity
@@ -39,6 +40,7 @@ abstract class HisabDatabase : RoomDatabase() {
     abstract fun budgetDao(): BudgetDao
     abstract fun savingsDao(): SavingsDao
     abstract fun recurringDao(): RecurringDao
+    abstract fun snapshotDao(): SnapshotDao
 
     companion object {
         const val DATABASE_NAME = "hisab.db"
