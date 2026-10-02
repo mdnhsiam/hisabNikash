@@ -27,9 +27,10 @@ fun PaymentMethodDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val methods = listOf(PaymentMethod.CASH, PaymentMethod.BANK, PaymentMethod.BKASH, PaymentMethod.NAGAD)
+    val selectedLabel = selected.localizedLabel()
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }, modifier = modifier) {
         OutlinedTextField(
-            value = selected.displayName,
+            value = selectedLabel,
             onValueChange = {},
             readOnly = true,
             modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
@@ -39,8 +40,9 @@ fun PaymentMethodDropdown(
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             methods.forEach { method ->
+                val label = method.localizedLabel()
                 DropdownMenuItem(
-                    text = { Text("${method.mark}  ${method.displayName}") },
+                    text = { Text("${method.mark}  $label") },
                     onClick = {
                         onSelected(method)
                         expanded = false
@@ -51,14 +53,16 @@ fun PaymentMethodDropdown(
     }
 }
 
-val PaymentMethod.displayName: String
-    get() = when (this) {
-        PaymentMethod.CASH -> "Cash"
-        PaymentMethod.BANK -> "Bank"
-        PaymentMethod.BKASH -> "bKash"
-        PaymentMethod.NAGAD -> "Nagad"
-        PaymentMethod.OTHER -> "Other"
-    }
+@Composable
+fun PaymentMethod.localizedLabel(): String = stringResource(
+    when (this) {
+        PaymentMethod.CASH -> R.string.payment_cash
+        PaymentMethod.BANK -> R.string.payment_bank
+        PaymentMethod.BKASH -> R.string.payment_bkash
+        PaymentMethod.NAGAD -> R.string.payment_nagad
+        PaymentMethod.OTHER -> R.string.payment_other
+    },
+)
 
 private val PaymentMethod.mark: String
     get() = when (this) {

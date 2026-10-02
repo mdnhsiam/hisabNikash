@@ -16,16 +16,33 @@ import com.hisabnikash.app.data.repository.RecurringRepository
 import com.hisabnikash.app.data.repository.RoomRecurringRepository
 import com.hisabnikash.app.feature.recurring.RecurringScheduler
 import com.hisabnikash.app.feature.recurring.WorkManagerRecurringGateway
+import androidx.room.withTransaction
+import com.hisabnikash.app.data.preferences.UserPreferences
+import com.hisabnikash.app.feature.settings.DataDeletionUseCase
 
 class AppContainer(
     val applicationContext: Context,
 ) {
     val database: HisabDatabase by lazy { HisabDatabase.create(applicationContext) }
+    val userPreferences: UserPreferences by lazy { UserPreferences.create(applicationContext) }
     val transactionRepository: TransactionRepository by lazy { RoomTransactionRepository(database) }
     val categoryRepository: CategoryRepository by lazy { RoomCategoryRepository(database.categoryDao()) }
-    val paymentMethodPreference: PaymentMethodPreference = InMemoryPaymentMethodPreference()
+    val paymentMethodPreference: PaymentMethodPreference by lazy { userPreferences }
     val budgetRepository: BudgetRepository by lazy { RoomBudgetRepository(database) }
     val savingsRepository: SavingsRepository by lazy { RoomSavingsRepository(database) }
     val recurringRepository: RecurringRepository by lazy { RoomRecurringRepository(database, transactionRepository) }
     val recurringScheduler: RecurringScheduler by lazy { RecurringScheduler(WorkManagerRecurringGateway(applicationContext)) }
+    val dataDeletionUseCase: DataDeletionUseCase by lazy {
+        DataDeletionUseCase(
+            repositories = listOf(
+                transactionRepository,
+                budgetRepository,
+                savingsRepository,
+                recurringRepository,
+                categoryRepository,
+            ),
+            clearPrivatePreferences = userPreferences::clearPrivateState,
+            inTransaction = { operation -> database.withTransaction { operation() } },
+        )
+    }
 }

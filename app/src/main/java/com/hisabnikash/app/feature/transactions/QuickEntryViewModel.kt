@@ -8,6 +8,7 @@ import com.hisabnikash.app.core.model.PaymentMethod
 import com.hisabnikash.app.core.model.Transaction
 import com.hisabnikash.app.core.model.TransactionType
 import com.hisabnikash.app.core.money.MoneyParseResult
+import com.hisabnikash.app.R
 import com.hisabnikash.app.core.money.MoneyParser
 import com.hisabnikash.app.data.repository.CategoryRepository
 import com.hisabnikash.app.data.repository.PaymentMethodPreference
@@ -60,11 +61,11 @@ class QuickEntryViewModel(
         val current = mutableState.value
         val amount = MoneyParser.parseToMinorUnits(current.amountInput)
         val errors = buildMap {
-            if (amount !is MoneyParseResult.Success) put(FormField.AMOUNT, "Enter a valid amount")
-            if (current.description.isBlank()) put(FormField.DESCRIPTION, "Description is required")
-            if (current.categoryId == null) put(FormField.CATEGORY, "Choose a category")
+            if (amount !is MoneyParseResult.Success) put(FormField.AMOUNT, R.string.error_valid_amount)
+            if (current.description.isBlank()) put(FormField.DESCRIPTION, R.string.error_description_required)
+            if (current.categoryId == null) put(FormField.CATEGORY, R.string.error_choose_category)
             if (current.categoryId?.endsWith("_other") == true && current.customCategoryLabel.isBlank()) {
-                put(FormField.CUSTOM_CATEGORY, "Enter a category name")
+                put(FormField.CUSTOM_CATEGORY, R.string.error_category_name)
             }
         }
         if (errors.isNotEmpty()) {
@@ -121,9 +122,8 @@ class QuickEntryViewModel(
             }
             SubmitResult.Saved(transaction.id)
         } catch (error: Exception) {
-            val message = error.message ?: "Could not save transaction"
-            mutableState.update { it.copy(isSaving = false, saveError = message) }
-            SubmitResult.Failed(message)
+            mutableState.update { it.copy(isSaving = false, saveError = R.string.error_save_transaction) }
+            SubmitResult.Failed(R.string.error_save_transaction)
         }
     }
 

@@ -1,6 +1,7 @@
 package com.hisabnikash.app.navigation
 
 import android.Manifest
+import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -34,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -61,6 +64,8 @@ import com.hisabnikash.app.feature.savings.SavingsScreen
 import com.hisabnikash.app.feature.savings.SavingsViewModel
 import com.hisabnikash.app.feature.recurring.RecurringScreen
 import com.hisabnikash.app.feature.recurring.RecurringViewModel
+import com.hisabnikash.app.feature.settings.SettingsScreen
+import com.hisabnikash.app.feature.settings.SettingsViewModel
 import com.hisabnikash.app.core.model.CategoryType
 import com.hisabnikash.app.core.time.MonthKey
 import com.hisabnikash.app.domain.FinanceCalculator
@@ -79,6 +84,7 @@ fun HisabNavHost(container: AppContainer) {
     val scope = rememberCoroutineScope()
     val currentMonth = remember { MonthKey.fromInstant(Instant.now()) }
     val context = LocalContext.current
+    val addTransactionLabel = stringResource(R.string.add_transaction)
     var notificationPermissionGranted by remember {
         mutableStateOf(
             Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED,
@@ -157,6 +163,13 @@ fun HisabNavHost(container: AppContainer) {
             }
         },
     )
+    val settingsViewModel: SettingsViewModel = viewModel(
+        factory = remember(container) {
+            viewModelFactory {
+                initializer { SettingsViewModel(container.userPreferences, container.dataDeletionUseCase) }
+            }
+        },
+    )
 
     Scaffold(
         bottomBar = {
@@ -184,7 +197,10 @@ fun HisabNavHost(container: AppContainer) {
             }
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showQuickEntry = true }) {
+            FloatingActionButton(
+                onClick = { showQuickEntry = true },
+                modifier = Modifier.semantics { contentDescription = addTransactionLabel },
+            ) {
                 Text(text = "+", style = MaterialTheme.typography.headlineSmall)
             }
         },
@@ -233,18 +249,31 @@ fun HisabNavHost(container: AppContainer) {
                 }
             }
             composable(Route.Settings.path) {
-                val state by recurringViewModel.state.collectAsState()
-                RecurringScreen(
-                    state = state,
-                    notificationPermissionGranted = notificationPermissionGranted,
-                    onRequestPermission = {
-                        if (Build.VERSION.SDK_INT >= 33) notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                val recurringState by recurringViewModel.state.collectAsState()
+                val settingsState by settingsViewModel.state.collectAsState()
+                SettingsScreen(
+                    state = settingsState,
+                    onLanguageChange = { language ->
+                        settingsViewModel.setLanguage(language) { (context as? Activity)?.recreate() }
                     },
-                    onCreate = { description, amount, quick -> scope.launch { recurringViewModel.create(description, amount, quick) } },
-                    onConfirm = { id -> scope.launch { recurringViewModel.quickConfirm(id) } },
-                    onReviewConfirm = { id, editor -> scope.launch { recurringViewModel.confirmWithEdits(id, editor) } },
-                    onSkip = { id -> scope.launch { recurringViewModel.skip(id) } },
-                    onDisable = { id -> scope.launch { recurringViewModel.disable(id) } },
+                    onDismissGuestWarning = settingsViewModel::dismissGuestWarning,
+                    onDeleteAllData = settingsViewModel::deleteAllLocalData,
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                    recurringContent = {
+                        RecurringScreen(
+                            state = recurringState,
+                            notificationPermissionGranted = notificationPermissionGranted,
+                            onRequestPermission = {
+                                if (Build.VERSION.SDK_INT >= 33) notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            },
+                            onCreate = { description, amount, quick -> scope.launch { recurringViewModel.create(description, amount, quick) } },
+                            onConfirm = { id -> scope.launch { recurringViewModel.quickConfirm(id) } },
+                            onReviewConfirm = { id, editor -> scope.launch { recurringViewModel.confirmWithEdits(id, editor) } },
+                            onSkip = { id -> scope.launch { recurringViewModel.skip(id) } },
+                            onDisable = { id -> scope.launch { recurringViewModel.disable(id) } },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    },
                 )
             }
         }

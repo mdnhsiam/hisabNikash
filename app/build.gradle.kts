@@ -51,6 +51,8 @@ android {
         jniLibs.keepDebugSymbols += "**/*.so"
     }
 
+    bundle.language.enableSplit = false
+
     lint {
         disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable", "KaptUsageInsteadOfKsp")
     }
@@ -74,6 +76,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.datastore.preferences)
     kapt(libs.androidx.room.compiler)
 
     implementation(platform(libs.androidx.compose.bom))

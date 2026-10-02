@@ -39,6 +39,8 @@ class RoomTransactionRepository(
         transactionDao.deleteById(id)
     }
 
+    override suspend fun clearAll() = transactionDao.deleteAll()
+
     override suspend fun findPossibleDuplicate(candidate: Transaction): Transaction? =
         transactionDao.findPossibleDuplicate(
             candidateId = candidate.id,

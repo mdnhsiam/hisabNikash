@@ -3,11 +3,8 @@ package com.hisabnikash.app.feature.recurring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -43,7 +40,7 @@ fun RecurringScreen(
 ) {
     var showEditor by remember { mutableStateOf(false) }
     var reviewItem by remember { mutableStateOf<RecurringItem?>(null) }
-    Column(modifier = modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(modifier = modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(stringResource(R.string.recurring_title), style = MaterialTheme.typography.headlineSmall)
             TextButton(onClick = { showEditor = true }) { Text(stringResource(R.string.add_recurring)) }
@@ -57,8 +54,8 @@ fun RecurringScreen(
             }
         }
         if (state.items.isEmpty()) Text(stringResource(R.string.no_recurring), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(state.items, key = RecurringItem::id) { item ->
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            state.items.forEach { item ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(item.description, style = MaterialTheme.typography.titleMedium)

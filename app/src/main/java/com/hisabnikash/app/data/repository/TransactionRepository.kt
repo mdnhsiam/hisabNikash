@@ -4,7 +4,7 @@ import com.hisabnikash.app.core.model.Transaction
 import com.hisabnikash.app.core.model.Category
 import kotlinx.coroutines.flow.Flow
 
-interface TransactionRepository {
+interface TransactionRepository : ClearableRepository {
     fun observeAll(): Flow<List<Transaction>>
 
     suspend fun add(transaction: Transaction)
@@ -16,6 +16,8 @@ interface TransactionRepository {
     suspend fun delete(id: String)
 
     suspend fun findPossibleDuplicate(candidate: Transaction): Transaction?
+
+    override suspend fun clearAll() = Unit
 }
 
 object TransactionDuplicatePolicy {

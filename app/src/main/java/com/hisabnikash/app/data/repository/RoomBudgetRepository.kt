@@ -25,6 +25,7 @@ class RoomBudgetRepository(
     }
 
     override suspend fun delete(id: String) = dao.deleteById(id)
+    override suspend fun clearAll() = dao.deleteAll()
 }
 
 private fun Budget.toEntity() = BudgetEntity(id, monthKey, categoryId, amountMinor, createdAtEpochMillis, updatedAtEpochMillis)

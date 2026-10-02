@@ -51,6 +51,13 @@ class RoomSavingsRepository(
             )
         }
     }
+
+    override suspend fun clearAll() {
+        database.withTransaction {
+            dao.deleteAllAllocations()
+            dao.deleteAllGoals()
+        }
+    }
 }
 
 private fun SavingsGoal.toEntity() = SavingsGoalEntity(id, name, targetMinor, isArchived, createdAtEpochMillis, updatedAtEpochMillis)

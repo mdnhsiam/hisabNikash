@@ -36,4 +36,10 @@ interface SavingsDao {
 
     @Query("UPDATE savings_goals SET isArchived = 1, updatedAtEpochMillis = :updatedAt WHERE id = :id")
     suspend fun archiveGoal(id: String, updatedAt: Long)
+
+    @Query("DELETE FROM goal_allocations")
+    suspend fun deleteAllAllocations()
+
+    @Query("DELETE FROM savings_goals")
+    suspend fun deleteAllGoals()
 }

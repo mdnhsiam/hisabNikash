@@ -4,7 +4,7 @@ import com.hisabnikash.app.core.model.Category
 import com.hisabnikash.app.core.model.CategoryType
 import kotlinx.coroutines.flow.Flow
 
-interface CategoryRepository {
+interface CategoryRepository : ClearableRepository {
     fun observeActive(type: CategoryType): Flow<List<Category>>
 
     suspend fun add(category: Category)
@@ -12,6 +12,8 @@ interface CategoryRepository {
     suspend fun update(category: Category)
 
     suspend fun archive(id: String)
+
+    override suspend fun clearAll() = Unit
 }
 
 object DefaultCategories {

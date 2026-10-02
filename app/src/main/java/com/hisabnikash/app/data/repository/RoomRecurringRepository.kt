@@ -30,6 +30,7 @@ class RoomRecurringRepository(
     }
 
     override suspend fun delete(id: String) = dao.deleteById(id)
+    override suspend fun clearAll() = dao.deleteAll()
 
     override suspend fun confirmOccurrence(id: String, edits: RecurringEditor?): Transaction {
         val now = nowEpochMillis()

@@ -29,6 +29,7 @@ import com.hisabnikash.app.core.model.Transaction
 import com.hisabnikash.app.core.model.TransactionType
 import com.hisabnikash.app.core.money.MoneyFormatter
 import com.hisabnikash.app.ui.components.EmptyState
+import com.hisabnikash.app.ui.components.localizedLabel
 
 @Composable
 fun TransactionListScreen(
@@ -58,7 +59,7 @@ fun TransactionListScreen(
                         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column {
                                 Text(transaction.description, style = MaterialTheme.typography.titleMedium)
-                                Text(transaction.paymentMethod.name, style = MaterialTheme.typography.bodySmall)
+                                Text(transaction.paymentMethod.localizedLabel(), style = MaterialTheme.typography.bodySmall)
                             }
                             Column {
                                 Text(

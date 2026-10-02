@@ -25,6 +25,11 @@ class RoomCategoryRepository(
     override suspend fun archive(id: String) {
         categoryDao.archive(id)
     }
+
+    override suspend fun clearAll() {
+        categoryDao.deleteCustomCategories()
+        categoryDao.reactivateSystemCategories()
+    }
 }
 
 internal fun Category.toEntity() = CategoryEntity(

@@ -60,7 +60,7 @@ fun QuickEntryScreen(
             value = state.amountInput,
             onValueChange = onAmountChange,
             label = stringResource(R.string.amount_bdt),
-            error = state.errors[FormField.AMOUNT],
+            error = state.errors[FormField.AMOUNT]?.let { stringResource(it) },
             modifier = Modifier.fillMaxWidth(),
         )
         OutlinedTextField(
@@ -70,13 +70,13 @@ fun QuickEntryScreen(
             label = { Text(stringResource(R.string.description)) },
             singleLine = true,
             isError = state.errors.containsKey(FormField.DESCRIPTION),
-            supportingText = state.errors[FormField.DESCRIPTION]?.let { { Text(it) } },
+            supportingText = state.errors[FormField.DESCRIPTION]?.let { error -> { Text(stringResource(error)) } },
         )
         CategoryDropdown(
             categories = state.categories,
             selectedId = state.categoryId,
             onSelected = onCategoryChange,
-            error = state.errors[FormField.CATEGORY],
+            error = state.errors[FormField.CATEGORY]?.let { stringResource(it) },
             modifier = Modifier.fillMaxWidth(),
         )
         if (state.categoryId?.endsWith("_other") == true) {
@@ -86,7 +86,7 @@ fun QuickEntryScreen(
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.custom_category)) },
                 isError = state.errors.containsKey(FormField.CUSTOM_CATEGORY),
-                supportingText = state.errors[FormField.CUSTOM_CATEGORY]?.let { { Text(it) } },
+                supportingText = state.errors[FormField.CUSTOM_CATEGORY]?.let { error -> { Text(stringResource(error)) } },
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
@@ -106,7 +106,7 @@ fun QuickEntryScreen(
             label = { Text(stringResource(R.string.note_optional)) },
             minLines = 2,
         )
-        state.saveError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        state.saveError?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
         Button(
             onClick = onSubmit,
             enabled = !state.isSaving,

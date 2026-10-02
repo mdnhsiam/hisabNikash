@@ -27,4 +27,7 @@ interface RecurringDao {
 
     @Query("DELETE FROM recurring_items WHERE id = :id")
     suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM recurring_items")
+    suspend fun deleteAll()
 }

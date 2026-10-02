@@ -28,4 +28,10 @@ interface CategoryDao {
 
     @Query("UPDATE categories SET isActive = 0 WHERE id = :id")
     suspend fun archive(id: String)
+
+    @Query("DELETE FROM categories WHERE isSystem = 0")
+    suspend fun deleteCustomCategories()
+
+    @Query("UPDATE categories SET isActive = 1 WHERE isSystem = 1")
+    suspend fun reactivateSystemCategories()
 }

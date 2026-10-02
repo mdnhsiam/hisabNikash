@@ -18,10 +18,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.hisabnikash.app.R
 import com.hisabnikash.app.core.money.MoneyFormatter
 import com.hisabnikash.app.ui.components.CategoryDropdown
+import com.hisabnikash.app.ui.components.localizedName
 
 @Composable
 fun BudgetScreen(
@@ -32,6 +34,7 @@ fun BudgetScreen(
 ) {
     var amount by remember { mutableStateOf("") }
     var categoryId by remember { mutableStateOf<String?>(null) }
+    val useBangla = LocalConfiguration.current.locales[0].language == "bn"
     Card(modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.monthly_budget), style = MaterialTheme.typography.titleMedium)
@@ -45,7 +48,7 @@ fun BudgetScreen(
             }
             state.categoryBudgets.forEach { budget ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(state.categories.firstOrNull { it.id == budget.categoryId }?.nameEn ?: budget.categoryId.orEmpty())
+                    Text(state.categories.firstOrNull { it.id == budget.categoryId }?.localizedName(useBangla) ?: budget.categoryId.orEmpty())
                     Text(MoneyFormatter.formatMinorUnits(budget.amountMinor))
                     TextButton(onClick = { onDelete(budget.id) }) { Text(stringResource(R.string.delete)) }
                 }

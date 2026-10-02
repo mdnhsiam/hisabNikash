@@ -16,6 +16,7 @@ coroutines = "1.10.2"
 robolectric = "4.16.1"
 desugarJdkLibs = "2.1.5"
 work = "2.11.2"
+datastore = "1.2.1"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -45,6 +46,7 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

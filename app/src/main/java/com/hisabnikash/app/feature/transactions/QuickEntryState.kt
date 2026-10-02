@@ -17,8 +17,8 @@ data class QuickEntryState(
     val note: String = "",
     val occurredAtEpochMillis: Long = 0L,
     val isSaving: Boolean = false,
-    val errors: Map<FormField, String> = emptyMap(),
-    val saveError: String? = null,
+    val errors: Map<FormField, Int> = emptyMap(),
+    val saveError: Int? = null,
 )
 
 enum class FormField { AMOUNT, DESCRIPTION, CATEGORY, CUSTOM_CATEGORY }
@@ -26,6 +26,6 @@ enum class FormField { AMOUNT, DESCRIPTION, CATEGORY, CUSTOM_CATEGORY }
 sealed interface SubmitResult {
     data class Saved(val transactionId: String) : SubmitResult
     data class PossibleDuplicate(val existing: Transaction) : SubmitResult
-    data class ValidationFailed(val errors: Map<FormField, String>) : SubmitResult
-    data class Failed(val message: String) : SubmitResult
+    data class ValidationFailed(val errors: Map<FormField, Int>) : SubmitResult
+    data class Failed(val messageRes: Int) : SubmitResult
 }

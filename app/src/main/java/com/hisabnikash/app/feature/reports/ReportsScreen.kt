@@ -15,9 +15,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
 import com.hisabnikash.app.R
 import com.hisabnikash.app.core.money.MoneyFormatter
 import com.hisabnikash.app.ui.components.SummaryCard
+import com.hisabnikash.app.ui.components.localizedLabel
+import com.hisabnikash.app.core.time.localizedLabel
 
 @Composable
 fun ReportsScreen(
@@ -27,14 +30,15 @@ fun ReportsScreen(
     modifier: Modifier = Modifier,
 ) {
     val report = state.report
+    val locale = LocalConfiguration.current.locales[0]
     Column(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            TextButton(onClick = onPreviousMonth) { Text("‹") }
-            Text(report.month.value, style = MaterialTheme.typography.titleLarge)
-            TextButton(onClick = onNextMonth) { Text("›") }
+            TextButton(onClick = onPreviousMonth) { Text(stringResource(R.string.previous_month)) }
+            Text(report.month.localizedLabel(locale), style = MaterialTheme.typography.titleLarge)
+            TextButton(onClick = onNextMonth) { Text(stringResource(R.string.next_month)) }
         }
         SummaryCard(stringResource(R.string.monthly_savings), MoneyFormatter.formatMinorUnits(report.netSavingsMinor))
         SummaryCard(stringResource(R.string.previous_month_change), signedMoney(report.netChangeMinor))
@@ -44,7 +48,7 @@ fun ReportsScreen(
             BreakdownRow(category ?: stringResource(R.string.uncategorized), amount)
         }
         Text(stringResource(R.string.by_payment_method), style = MaterialTheme.typography.titleMedium)
-        report.expenseByPaymentMethod.forEach { (method, amount) -> BreakdownRow(method.name, amount) }
+        report.expenseByPaymentMethod.forEach { (method, amount) -> BreakdownRow(method.localizedLabel(), amount) }
     }
 }
 
