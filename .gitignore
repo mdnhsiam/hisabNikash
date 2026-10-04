@@ -1,6 +1,7 @@
 .superpowers/
 .worktrees/
 .gradle/
+.kotlin/
 local.properties
 **/build/
 captures/
