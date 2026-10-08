@@ -12,6 +12,7 @@ import com.hisabnikash.app.core.model.RecurringItem
 import com.hisabnikash.app.data.db.HisabDatabase
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.async
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -71,7 +72,8 @@ class RoomRepositoryJvmIntegrationTest {
     fun `goal allocation and reversal are atomic auditable records`() = runTest {
         val savings = RoomSavingsRepository(database)
         savings.upsertGoal(SavingsGoal("goal", "Emergency", 100_000, createdAtEpochMillis = 10))
-        savings.allocate(GoalAllocation("a1", "goal", 50_000, allocatedAtEpochMillis = 20), availableSavingsMinor = 80_000)
+        transactions.add(Transaction("income-for-goal", TransactionType.INCOME, 80_000, "Income", null, paymentMethod = PaymentMethod.BANK, occurredAtEpochMillis = 1, createdAtEpochMillis = 1))
+        savings.allocate(GoalAllocation("a1", "goal", 50_000, allocatedAtEpochMillis = 20))
         savings.reverse("a1", "r1", 30)
 
         val records = savings.observeAllocations().first()
@@ -81,11 +83,26 @@ class RoomRepositoryJvmIntegrationTest {
 
         var rejected = false
         try {
-            savings.allocate(GoalAllocation("too-much", "goal", 90_000, allocatedAtEpochMillis = 40), availableSavingsMinor = 80_000)
+            savings.allocate(GoalAllocation("too-much", "goal", 90_000, allocatedAtEpochMillis = 40))
         } catch (_: IllegalArgumentException) {
             rejected = true
         }
         assertTrue(rejected)
+    }
+
+    @Test
+    fun `concurrent allocations cannot exceed persisted lifetime savings`() = runTest {
+        val savings = RoomSavingsRepository(database)
+        transactions.add(Transaction("income", TransactionType.INCOME, 100_000, "Income", null, paymentMethod = PaymentMethod.BANK, occurredAtEpochMillis = 1, createdAtEpochMillis = 1))
+        savings.upsertGoal(SavingsGoal("goal", "Emergency", null, createdAtEpochMillis = 2))
+
+        val outcomes = listOf(
+            async { runCatching { savings.allocate(GoalAllocation("a1", "goal", 60_000, allocatedAtEpochMillis = 3)) } },
+            async { runCatching { savings.allocate(GoalAllocation("a2", "goal", 60_000, allocatedAtEpochMillis = 4)) } },
+        ).map { it.await() }
+
+        assertEquals(1, outcomes.count { it.isSuccess })
+        assertEquals(60_000L, savings.observeAllocations().first().sumOf { it.amountMinor })
     }
 
     @Test
@@ -103,10 +120,14 @@ class RoomRepositoryJvmIntegrationTest {
         )
         recurringRepository.upsert(item)
 
-        recurringRepository.confirmOccurrence(item.id)
+        recurringRepository.confirmOccurrence(item.id, expectedDueAtEpochMillis = item.nextDueAtEpochMillis)
         assertEquals(1, transactions.observeAll().first().size)
         val advanced = recurringRepository.find(item.id)!!
         assertTrue(advanced.nextDueAtEpochMillis > 1_000)
+
+        val stale = runCatching { recurringRepository.confirmOccurrence(item.id, expectedDueAtEpochMillis = item.nextDueAtEpochMillis) }
+        assertTrue(stale.isFailure)
+        assertEquals(1, transactions.observeAll().first().size)
 
         recurringRepository.skipOccurrence(item.id)
         recurringRepository.disable(item.id)

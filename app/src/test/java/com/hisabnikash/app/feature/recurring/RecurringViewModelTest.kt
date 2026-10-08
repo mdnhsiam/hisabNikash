@@ -2,6 +2,8 @@ package com.hisabnikash.app.feature.recurring
 
 import com.hisabnikash.app.core.model.RecurringItem
 import com.hisabnikash.app.core.model.Transaction
+import com.hisabnikash.app.core.model.TransactionType
+import com.hisabnikash.app.core.model.PaymentMethod
 import com.hisabnikash.app.data.repository.RecurringRepository
 import com.hisabnikash.app.feature.transactions.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -56,6 +58,23 @@ class RecurringViewModelTest {
         assertFalse(repository.items.value.single().isEnabled)
         assertTrue(gateway.jobs.isEmpty())
     }
+
+    @Test
+    fun `create preserves selected financial fields and rejects past due date`() = runTest {
+        val repository = FakeRecurringRepository()
+        val now = java.time.Instant.parse("2025-01-01T00:00:00Z").toEpochMilli()
+        val viewModel = RecurringViewModel(repository, RecurringScheduler(FakeRecurringWorkGateway()) { 0 }, nowEpochMillis = { now }, newId = { "salary" })
+        advanceUntilIdle()
+
+        val saved = viewModel.create(RecurringDraft(TransactionType.INCOME, "1000", "Salary", "income_salary", PaymentMethod.BANK, "Monthly pay", "2025-02-01", false))
+        val invalid = viewModel.create(RecurringDraft(TransactionType.EXPENSE, "10", "Old", "expense_bills", PaymentMethod.CASH, "", "2024-12-01", true))
+
+        assertTrue(saved)
+        assertFalse(invalid)
+        assertEquals(TransactionType.INCOME, repository.items.value.single().type)
+        assertEquals(PaymentMethod.BANK, repository.items.value.single().paymentMethod)
+        assertEquals("income_salary", repository.items.value.single().categoryId)
+    }
 }
 
 internal class FakeRecurringRepository : RecurringRepository {
@@ -65,8 +84,9 @@ internal class FakeRecurringRepository : RecurringRepository {
     override suspend fun find(id: String): RecurringItem? = items.value.firstOrNull { it.id == id }
     override suspend fun upsert(item: RecurringItem) { items.value = items.value.filterNot { it.id == item.id } + item }
     override suspend fun delete(id: String) { items.value = items.value.filterNot { it.id == id } }
-    override suspend fun confirmOccurrence(id: String, edits: RecurringEditor?): Transaction {
+    override suspend fun confirmOccurrence(id: String, expectedDueAtEpochMillis: Long, edits: RecurringEditor?): Transaction {
         val item = find(id) ?: error("missing")
+        require(item.nextDueAtEpochMillis == expectedDueAtEpochMillis)
         val transaction = item.toTransaction(edits, createdAtEpochMillis = 1_000)
         confirmed += transaction
         upsert(item.copy(nextDueAtEpochMillis = RecurringDatePolicy.nextDue(item.nextDueAtEpochMillis, 1_000)))

@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CategoryDao {
+    @Query("SELECT * FROM categories ORDER BY type, sortOrder, nameEn")
+    fun observeAll(): Flow<List<CategoryEntity>>
+
     @Query("SELECT * FROM categories WHERE type = :type AND isActive = 1 ORDER BY sortOrder, nameEn")
     fun observeActive(type: CategoryType): Flow<List<CategoryEntity>>
 

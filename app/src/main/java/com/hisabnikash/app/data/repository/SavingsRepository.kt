@@ -9,7 +9,7 @@ interface SavingsRepository : ClearableRepository {
     fun observeAllocations(): Flow<List<GoalAllocation>>
     suspend fun upsertGoal(goal: SavingsGoal)
     suspend fun archiveGoal(id: String, updatedAtEpochMillis: Long)
-    suspend fun allocate(allocation: GoalAllocation, availableSavingsMinor: Long)
+    suspend fun allocate(allocation: GoalAllocation)
     suspend fun reverse(allocationId: String, reversalId: String, atEpochMillis: Long)
     override suspend fun clearAll() = Unit
 }

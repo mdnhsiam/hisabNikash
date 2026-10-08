@@ -3,6 +3,8 @@ package com.hisabnikash.app.backup.drive
 import com.hisabnikash.app.backup.RestoreResult
 import com.hisabnikash.app.backup.SnapshotExporter
 import com.hisabnikash.app.backup.SnapshotImporter
+import com.hisabnikash.app.backup.RestoreRecoveryStore
+import com.hisabnikash.app.backup.NoOpRestoreRecoveryStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -17,6 +19,7 @@ class DriveBackupStore(
     private val remote: DriveRemoteStore,
     private val exporter: SnapshotExporter,
     private val importer: SnapshotImporter,
+    private val recoveryStore: RestoreRecoveryStore = NoOpRestoreRecoveryStore,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val mutableStatus = MutableStateFlow<BackupStatus>(BackupStatus.Idle)
@@ -39,7 +42,9 @@ class DriveBackupStore(
     suspend fun restoreLatest(accessToken: String, password: CharArray): RestoreResult {
         val encrypted = remote.downloadLatest(accessToken) ?: throw DriveException("No Drive backup found")
         return try {
-            importer.apply(importer.validate(encrypted, password))
+            val validated = importer.validate(encrypted, password)
+            recoveryStore.save(password)
+            importer.apply(validated)
         } finally {
             encrypted.fill(0)
         }

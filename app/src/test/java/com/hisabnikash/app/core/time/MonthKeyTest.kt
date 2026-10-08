@@ -4,8 +4,19 @@ import java.time.Instant
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.Locale
 
 class MonthKeyTest {
+    @Test
+    fun `storage value always uses ASCII digits regardless of display locale`() {
+        val previous = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag("bn-BD"))
+            assertEquals("2025-02", MonthKey(2025, 2).value)
+        } finally {
+            Locale.setDefault(previous)
+        }
+    }
     @Test
     fun `Dhaka midnight assigns UTC instants to the correct month`() {
         val dhaka = ZoneId.of("Asia/Dhaka")

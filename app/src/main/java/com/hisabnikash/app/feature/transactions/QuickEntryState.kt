@@ -24,6 +24,7 @@ data class QuickEntryState(
 enum class FormField { AMOUNT, DESCRIPTION, CATEGORY, CUSTOM_CATEGORY }
 
 sealed interface SubmitResult {
+    data object InProgress : SubmitResult
     data class Saved(val transactionId: String) : SubmitResult
     data class PossibleDuplicate(val existing: Transaction) : SubmitResult
     data class ValidationFailed(val errors: Map<FormField, Int>) : SubmitResult

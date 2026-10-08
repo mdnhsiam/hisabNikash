@@ -18,6 +18,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -28,13 +30,15 @@ import com.hisabnikash.app.core.money.MoneyFormatter
 @Composable
 fun SavingsScreen(
     state: SavingsState,
-    onCreateGoal: (String, String) -> Unit,
-    onAllocate: (String, String) -> Unit,
-    onReverse: (String) -> Unit,
+    onCreateGoal: suspend (String, String) -> SavingsActionResult,
+    onAllocate: suspend (String, String) -> SavingsActionResult,
+    onReverse: suspend (String) -> SavingsActionResult,
     modifier: Modifier = Modifier,
 ) {
     var showGoalEditor by remember { mutableStateOf(false) }
     var allocatingGoal by remember { mutableStateOf<SavingsGoal?>(null) }
+    var errorRes by remember { mutableStateOf<Int?>(null) }
+    val scope = rememberCoroutineScope()
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -63,11 +67,12 @@ fun SavingsScreen(
                     }
                     TextButton(onClick = { allocatingGoal = goal }) { Text(stringResource(R.string.allocate_savings)) }
                     state.allocations.lastOrNull { it.goalId == goal.id && it.amountMinor > 0 && state.allocations.none { reversal -> reversal.reversesAllocationId == it.id } }?.let { allocation ->
-                        TextButton(onClick = { onReverse(allocation.id) }) { Text(stringResource(R.string.reverse_last_allocation)) }
+                        TextButton(onClick = { scope.launch { if (onReverse(allocation.id) !is SavingsActionResult.Saved) errorRes = R.string.operation_failed } }) { Text(stringResource(R.string.reverse_last_allocation)) }
                     }
                 }
             }
         }
+        errorRes?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
     }
 
     if (showGoalEditor) {
@@ -82,7 +87,7 @@ fun SavingsScreen(
                     OutlinedTextField(target, { target = it }, label = { Text(stringResource(R.string.target_optional)) })
                 }
             },
-            confirmButton = { Button(onClick = { onCreateGoal(name, target); showGoalEditor = false }, enabled = name.isNotBlank()) { Text(stringResource(R.string.save)) } },
+            confirmButton = { Button(onClick = { scope.launch { if (onCreateGoal(name, target) is SavingsActionResult.Saved) { showGoalEditor = false; errorRes = null } else errorRes = R.string.operation_failed } }, enabled = name.isNotBlank()) { Text(stringResource(R.string.save)) } },
             dismissButton = { TextButton(onClick = { showGoalEditor = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
@@ -93,7 +98,7 @@ fun SavingsScreen(
             onDismissRequest = { allocatingGoal = null },
             title = { Text(stringResource(R.string.allocate_to_goal, goal.name)) },
             text = { OutlinedTextField(amount, { amount = it }, label = { Text(stringResource(R.string.amount_bdt)) }) },
-            confirmButton = { Button(onClick = { onAllocate(goal.id, amount); allocatingGoal = null }) { Text(stringResource(R.string.allocate_savings)) } },
+            confirmButton = { Button(onClick = { scope.launch { if (onAllocate(goal.id, amount) is SavingsActionResult.Saved) { allocatingGoal = null; errorRes = null } else errorRes = R.string.insufficient_or_invalid_savings } }) { Text(stringResource(R.string.allocate_savings)) } },
             dismissButton = { TextButton(onClick = { allocatingGoal = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }

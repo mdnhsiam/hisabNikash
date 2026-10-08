@@ -16,6 +16,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalConfiguration
@@ -28,12 +30,14 @@ import com.hisabnikash.app.ui.components.localizedName
 @Composable
 fun BudgetScreen(
     state: BudgetState,
-    onSave: (String, String?) -> Unit,
+    onSave: suspend (String, String?) -> BudgetSaveResult,
     onDelete: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var amount by remember { mutableStateOf("") }
     var categoryId by remember { mutableStateOf<String?>(null) }
+    var errorRes by remember { mutableStateOf<Int?>(null) }
+    val scope = rememberCoroutineScope()
     val useBangla = LocalConfiguration.current.locales[0].language == "bn"
     Card(modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -67,11 +71,12 @@ fun BudgetScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { onSave(amount, null); amount = "" }) { Text(stringResource(R.string.save_total_budget)) }
-                Button(onClick = { onSave(amount, categoryId); amount = "" }, enabled = categoryId != null) {
+                Button(onClick = { scope.launch { if (onSave(amount, null) is BudgetSaveResult.Saved) { amount = ""; errorRes = null } else errorRes = R.string.error_valid_amount } }) { Text(stringResource(R.string.save_total_budget)) }
+                Button(onClick = { scope.launch { if (onSave(amount, categoryId) is BudgetSaveResult.Saved) { amount = ""; errorRes = null } else errorRes = R.string.error_valid_amount } }, enabled = categoryId != null) {
                     Text(stringResource(R.string.save_category_budget))
                 }
             }
+            errorRes?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
         }
     }
 }

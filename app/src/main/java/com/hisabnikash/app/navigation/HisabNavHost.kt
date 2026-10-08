@@ -78,7 +78,11 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HisabNavHost(container: AppContainer) {
+fun HisabNavHost(
+    container: AppContainer,
+    requestedRecurringId: String? = null,
+    onRecurringRequestConsumed: () -> Unit = {},
+) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentPath = backStackEntry?.destination?.route ?: Route.Dashboard.path
@@ -112,7 +116,7 @@ fun HisabNavHost(container: AppContainer) {
     )
     val transactionListViewModel: TransactionListViewModel = viewModel(
         factory = remember(container) {
-            viewModelFactory { initializer { TransactionListViewModel(container.transactionRepository) } }
+            viewModelFactory { initializer { TransactionListViewModel(container.transactionRepository, container.categoryRepository) } }
         },
     )
     val dashboardViewModel: DashboardViewModel = viewModel(
@@ -130,7 +134,7 @@ fun HisabNavHost(container: AppContainer) {
     )
     val reportsViewModel: ReportsViewModel = viewModel(
         factory = remember(container) {
-            viewModelFactory { initializer { ReportsViewModel(container.transactionRepository) } }
+            viewModelFactory { initializer { ReportsViewModel(container.transactionRepository, container.categoryRepository) } }
         },
     )
     val budgetViewModel: BudgetViewModel = viewModel(
@@ -153,7 +157,9 @@ fun HisabNavHost(container: AppContainer) {
                     SavingsViewModel(
                         repository = container.savingsRepository,
                         monthlySavingsMinor = container.transactionRepository.observeAll().map { transactions ->
-                            FinanceCalculator.monthlyReport(transactions, currentMonth).netSavingsMinor
+                            transactions.sumOf { transaction ->
+                                if (transaction.type == com.hisabnikash.app.core.model.TransactionType.INCOME) transaction.amountMinor else -transaction.amountMinor
+                            }
                         },
                     )
                 }
@@ -177,7 +183,9 @@ fun HisabNavHost(container: AppContainer) {
                         container.localBackupStore,
                         container.driveAuthorizationClient,
                         container.driveBackupStore,
-                        container.backupPasswordCache,
+                        container.driveBackupPasswordCache,
+                        container.preRestoreBackupStore,
+                        container.categoryRepository,
                     )
                 }
             }
@@ -188,6 +196,9 @@ fun HisabNavHost(container: AppContainer) {
     }
     val restoreDocumentLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         restoreDocumentUri = uri?.toString()
+    }
+    LaunchedEffect(requestedRecurringId) {
+        if (requestedRecurringId != null) navController.navigate(Route.Settings.path) { launchSingleTop = true }
     }
     val driveResolution by settingsViewModel.driveResolution.collectAsState()
     val driveAuthorizationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
@@ -226,7 +237,7 @@ fun HisabNavHost(container: AppContainer) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showQuickEntry = true },
+                onClick = { quickEntryViewModel.startNewEntry(); showQuickEntry = true },
                 modifier = Modifier.semantics { contentDescription = addTransactionLabel },
             ) {
                 Text(text = "+", style = MaterialTheme.typography.headlineSmall)
@@ -263,15 +274,15 @@ fun HisabNavHost(container: AppContainer) {
                 ) {
                     BudgetScreen(
                         state = budgetState,
-                        onSave = { amount, category -> scope.launch { budgetViewModel.saveBudget(amount, category) } },
+                        onSave = budgetViewModel::saveBudget,
                         onDelete = budgetViewModel::delete,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     SavingsScreen(
                         state = savingsState,
-                        onCreateGoal = { name, target -> scope.launch { savingsViewModel.createGoal(name, target) } },
-                        onAllocate = { goal, amount -> scope.launch { savingsViewModel.allocate(goal, amount) } },
-                        onReverse = { allocation -> scope.launch { savingsViewModel.reverse(allocation) } },
+                        onCreateGoal = savingsViewModel::createGoal,
+                        onAllocate = savingsViewModel::allocate,
+                        onReverse = savingsViewModel::reverse,
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                     )
                 }
@@ -280,6 +291,7 @@ fun HisabNavHost(container: AppContainer) {
                 val recurringState by recurringViewModel.state.collectAsState()
                 val settingsState by settingsViewModel.state.collectAsState()
                 val backupMessage by settingsViewModel.backupMessage.collectAsState()
+                val settingsCategories by settingsViewModel.categories.collectAsState()
                 SettingsScreen(
                     state = settingsState,
                     onLanguageChange = { language ->
@@ -299,15 +311,23 @@ fun HisabNavHost(container: AppContainer) {
                     onDriveBackUpNow = settingsViewModel::driveBackUpNow,
                     onDriveRestoreLatest = settingsViewModel::driveRestoreLatest,
                     onDisconnectDrive = settingsViewModel::disconnectDrive,
+                    showUndoRestore = settingsViewModel.hasRestoreRecovery(),
+                    onUndoRestore = settingsViewModel::undoLastRestore,
+                    categories = settingsCategories,
+                    onRenameCategory = settingsViewModel::renameCategory,
+                    onArchiveCategory = settingsViewModel::archiveCategory,
                     modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
                     recurringContent = {
                         RecurringScreen(
                             state = recurringState,
+                            requestedReviewId = requestedRecurringId,
+                            onReviewRequestConsumed = onRecurringRequestConsumed,
+                            categories = settingsCategories,
                             notificationPermissionGranted = notificationPermissionGranted,
                             onRequestPermission = {
                                 if (Build.VERSION.SDK_INT >= 33) notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             },
-                            onCreate = { description, amount, quick -> scope.launch { recurringViewModel.create(description, amount, quick) } },
+                            onCreate = recurringViewModel::create,
                             onConfirm = { id -> scope.launch { recurringViewModel.quickConfirm(id) } },
                             onReviewConfirm = { id, editor -> scope.launch { recurringViewModel.confirmWithEdits(id, editor) } },
                             onSkip = { id -> scope.launch { recurringViewModel.skip(id) } },

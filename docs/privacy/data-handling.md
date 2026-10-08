@@ -7,7 +7,7 @@ Hisab is offline-first. Transactions, categories, budgets, goals and recurring i
 - Phone-folder backup is opt-in through Android's Storage Access Framework. The user chooses the folder and the app retains access only to that selection.
 - Google Drive backup is opt-in, requests only `drive.appdata`, and stores the encrypted envelope in the signed-in user's private app-data area.
 - Snapshot contents are encrypted before either transport with an authenticated, password-derived key. Passwords and access tokens are not written to logs or preferences. A protected local password cache is used only to support explicitly enabled background backup.
-- Restore validates/decrypts completely before replacing current data. Wrong passwords, corrupt payloads, unsupported versions, or invalid references leave current data unchanged.
+- Restore validates/decrypts completely before replacing current data. Wrong passwords, corrupt payloads, unsupported versions, or invalid references leave current data unchanged. Before a valid replacement, the app writes an encrypted on-device recovery copy that can undo the last restore.
 - Android platform cloud backup/device transfer is disabled; only the user-selected encrypted flows are supported.
 
 ## Manifest and network review

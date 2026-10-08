@@ -66,7 +66,7 @@ class SavingsViewModel(
         val available = mutableState.value.availableMinor.coerceAtLeast(0)
         if (parsed.minorUnits > available) return SavingsActionResult.InsufficientSavings
         val allocation = GoalAllocation(newId(), goalId, parsed.minorUnits, allocatedAtEpochMillis = nowEpochMillis())
-        return runCatching { repository.allocate(allocation, available) }
+        return runCatching { repository.allocate(allocation) }
             .fold({ SavingsActionResult.Saved }, { SavingsActionResult.Failed(it.message ?: "Could not allocate savings") })
     }
 

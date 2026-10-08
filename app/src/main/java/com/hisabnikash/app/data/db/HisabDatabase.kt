@@ -30,7 +30,7 @@ import com.hisabnikash.app.data.repository.DefaultCategories
         GoalAllocationEntity::class,
         RecurringItemEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(DbConverters::class)
@@ -48,20 +48,30 @@ abstract class HisabDatabase : RoomDatabase() {
         fun create(context: Context): HisabDatabase =
             Room.databaseBuilder(context, HisabDatabase::class.java, DATABASE_NAME)
                 .addCallback(SeedCategoriesCallback)
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
 
         fun createInMemory(context: Context): HisabDatabase =
             Room.inMemoryDatabaseBuilder(context, HisabDatabase::class.java)
                 .allowMainThreadQueries()
                 .addCallback(SeedCategoriesCallback)
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE goal_allocations ADD COLUMN reversesAllocationId TEXT")
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_goal_allocations_reversesAllocationId ON goal_allocations (reversesAllocationId)")
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                var expression = "monthKey"
+                "০১২৩৪৫৬৭৮৯".forEachIndexed { ascii, bangla ->
+                    expression = "replace($expression, '$bangla', '$ascii')"
+                }
+                db.execSQL("UPDATE budgets SET monthKey = $expression")
             }
         }
     }

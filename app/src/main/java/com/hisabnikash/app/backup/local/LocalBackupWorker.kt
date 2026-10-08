@@ -15,7 +15,7 @@ class LocalBackupWorker(
 ) : CoroutineWorker(appContext, params) {
     override suspend fun doWork(): Result {
         val container = (applicationContext as HisabApplication).container
-        val password = container.backupPasswordCache.load() ?: return Result.success()
+        val password = container.localBackupPasswordCache.load() ?: return Result.success()
         return try {
             container.localBackupStore.backUpNow(password)
             Result.success()

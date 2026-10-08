@@ -62,8 +62,8 @@ internal class FakeSavingsRepository : SavingsRepository {
     override suspend fun archiveGoal(id: String, updatedAtEpochMillis: Long) {
         goals.value = goals.value.map { if (it.id == id) it.copy(isArchived = true, updatedAtEpochMillis = updatedAtEpochMillis) else it }
     }
-    override suspend fun allocate(allocation: GoalAllocation, availableSavingsMinor: Long) {
-        require(allocation.amountMinor > 0 && allocation.amountMinor <= availableSavingsMinor)
+    override suspend fun allocate(allocation: GoalAllocation) {
+        require(allocation.amountMinor > 0)
         allocations.value = allocations.value + allocation
     }
     override suspend fun reverse(allocationId: String, reversalId: String, atEpochMillis: Long) {

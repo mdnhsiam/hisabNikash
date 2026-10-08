@@ -9,6 +9,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class HttpRequest(
     val method: String,
@@ -24,7 +26,7 @@ interface DriveHttpTransport {
 }
 
 class UrlConnectionDriveTransport : DriveHttpTransport {
-    override suspend fun execute(request: HttpRequest): HttpResponse {
+    override suspend fun execute(request: HttpRequest): HttpResponse = withContext(Dispatchers.IO) {
         try {
             val connection = URI(request.url).toURL().openConnection() as HttpURLConnection
             connection.requestMethod = request.method
@@ -52,7 +54,7 @@ class UrlConnectionDriveTransport : DriveHttpTransport {
             } ?: byteArrayOf()
             if (body.size > MAX_RESPONSE_BYTES) throw DriveRetryableException(status)
             connection.disconnect()
-            return HttpResponse(status, body)
+            HttpResponse(status, body)
         } catch (error: DriveException) {
             throw error
         } catch (error: IOException) {

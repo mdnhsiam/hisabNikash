@@ -5,6 +5,7 @@ import com.hisabnikash.app.core.model.CategoryType
 import kotlinx.coroutines.flow.Flow
 
 interface CategoryRepository : ClearableRepository {
+    fun observeAll(): Flow<List<Category>>
     fun observeActive(type: CategoryType): Flow<List<Category>>
 
     suspend fun add(category: Category)

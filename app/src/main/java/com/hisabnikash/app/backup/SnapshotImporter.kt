@@ -15,6 +15,7 @@ sealed interface RestoreResult {
 class SnapshotImporter(
     private val database: HisabDatabase,
     private val crypto: BackupCrypto = BackupCrypto(),
+    private val beforeCommit: suspend () -> Unit = {},
 ) {
     fun encode(snapshot: BackupSnapshotV1, password: CharArray): ByteArray {
         val clear = BackupWireCodec.encodeSnapshot(snapshot)
@@ -58,6 +59,7 @@ class SnapshotImporter(
                 goalAllocations = snapshot.goalAllocations,
                 recurringItems = snapshot.recurringItems,
             )
+            beforeCommit()
         }
         RestoreResult.Success
     } catch (error: Throwable) {

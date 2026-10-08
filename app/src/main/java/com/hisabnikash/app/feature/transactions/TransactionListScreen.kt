@@ -30,6 +30,14 @@ import com.hisabnikash.app.core.model.TransactionType
 import com.hisabnikash.app.core.money.MoneyFormatter
 import com.hisabnikash.app.ui.components.EmptyState
 import com.hisabnikash.app.ui.components.localizedLabel
+import com.hisabnikash.app.ui.components.localizedName
+import androidx.compose.ui.platform.LocalConfiguration
+import com.hisabnikash.app.core.money.MoneyParser
+import com.hisabnikash.app.core.money.MoneyParseResult
+import com.hisabnikash.app.core.model.CategoryType
+import com.hisabnikash.app.ui.components.CategoryDropdown
+import com.hisabnikash.app.ui.components.PaymentMethodDropdown
+import androidx.compose.material3.FilterChip
 
 @Composable
 fun TransactionListScreen(
@@ -39,6 +47,7 @@ fun TransactionListScreen(
     onDelete: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val useBangla = LocalConfiguration.current.locales[0].language == "bn"
     var editing by remember { mutableStateOf<Transaction?>(null) }
     var deleting by remember { mutableStateOf<Transaction?>(null) }
     Column(modifier = modifier.fillMaxSize().padding(horizontal = 16.dp)) {
@@ -59,6 +68,12 @@ fun TransactionListScreen(
                         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column {
                                 Text(transaction.description, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    transaction.oneOffCategoryLabel
+                                        ?: transaction.categoryId?.let { state.categories[it]?.localizedName(useBangla) ?: it }
+                                        ?: stringResource(R.string.uncategorized),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
                                 Text(transaction.paymentMethod.localizedLabel(), style = MaterialTheme.typography.bodySmall)
                             }
                             Column {
@@ -77,17 +92,44 @@ fun TransactionListScreen(
 
     editing?.let { transaction ->
         var description by remember(transaction.id) { mutableStateOf(transaction.description) }
+        var amount by remember(transaction.id) { mutableStateOf("${transaction.amountMinor / 100}.${(transaction.amountMinor % 100).toString().padStart(2, '0')}") }
+        var type by remember(transaction.id) { mutableStateOf(transaction.type) }
+        var categoryId by remember(transaction.id) { mutableStateOf(transaction.categoryId) }
+        var paymentMethod by remember(transaction.id) { mutableStateOf(transaction.paymentMethod) }
+        var note by remember(transaction.id) { mutableStateOf(transaction.note.orEmpty()) }
+        var date by remember(transaction.id) { mutableStateOf(java.time.Instant.ofEpochMilli(transaction.occurredAtEpochMillis).atZone(com.hisabnikash.app.core.time.MonthKey.DHAKA).toLocalDate().toString()) }
+        val parsedAmount = MoneyParser.parseToMinorUnits(amount)
+        val parsedDate = runCatching { java.time.LocalDate.parse(date) }.getOrNull()
         AlertDialog(
             onDismissRequest = { editing = null },
             title = { Text(stringResource(R.string.edit_transaction)) },
-            text = {
+            text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(type == TransactionType.EXPENSE, { type = TransactionType.EXPENSE }, label = { Text(stringResource(R.string.expense)) })
+                    FilterChip(type == TransactionType.INCOME, { type = TransactionType.INCOME }, label = { Text(stringResource(R.string.income)) })
+                }
+                OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text(stringResource(R.string.amount_bdt)) })
                 OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text(stringResource(R.string.description)) })
+                CategoryDropdown(state.categories.values.filter { it.type == (if (type == TransactionType.EXPENSE) CategoryType.EXPENSE else CategoryType.INCOME) && it.isActive }, categoryId, { categoryId = it }, null)
+                PaymentMethodDropdown(paymentMethod, { paymentMethod = it })
+                OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text(stringResource(R.string.transaction_date)) })
+                OutlinedTextField(value = note, onValueChange = { note = it }, label = { Text(stringResource(R.string.note_optional)) })
+            }
             },
             confirmButton = {
                 Button(onClick = {
-                    onUpdate(transaction.copy(description = description.trim(), updatedAtEpochMillis = System.currentTimeMillis()))
+                    onUpdate(transaction.copy(
+                        type = type,
+                        amountMinor = (parsedAmount as MoneyParseResult.Success).minorUnits,
+                        description = description.trim(),
+                        categoryId = categoryId,
+                        paymentMethod = paymentMethod,
+                        note = note.trim().ifEmpty { null },
+                        occurredAtEpochMillis = parsedDate!!.atStartOfDay(com.hisabnikash.app.core.time.MonthKey.DHAKA).toInstant().toEpochMilli(),
+                        updatedAtEpochMillis = System.currentTimeMillis(),
+                    ))
                     editing = null
-                }, enabled = description.isNotBlank()) { Text(stringResource(R.string.save)) }
+                }, enabled = description.isNotBlank() && categoryId != null && parsedAmount is MoneyParseResult.Success && parsedDate != null) { Text(stringResource(R.string.save)) }
             },
             dismissButton = { TextButton(onClick = { editing = null }) { Text(stringResource(R.string.cancel)) } },
         )

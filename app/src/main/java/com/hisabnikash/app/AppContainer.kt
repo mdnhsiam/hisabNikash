@@ -30,6 +30,7 @@ import com.hisabnikash.app.backup.local.LocalBackupStore
 import com.hisabnikash.app.backup.drive.DriveAuthorizationClient
 import com.hisabnikash.app.backup.drive.DriveBackupStore
 import com.hisabnikash.app.backup.drive.DriveRestClient
+import com.hisabnikash.app.backup.PreRestoreBackupStore
 
 class AppContainer(
     val applicationContext: Context,
@@ -48,21 +49,24 @@ class AppContainer(
     val savingsRepository: SavingsRepository by lazy { RoomSavingsRepository(database, onDataChanged) }
     val recurringRepository: RecurringRepository by lazy { RoomRecurringRepository(database, transactionRepository, onDataChanged = onDataChanged) }
     val recurringScheduler: RecurringScheduler by lazy { RecurringScheduler(WorkManagerRecurringGateway(applicationContext)) }
-    val backupPasswordCache: BackupPasswordCache by lazy { AndroidBackupSecretStore(applicationContext) }
+    val localBackupPasswordCache: BackupPasswordCache by lazy { AndroidBackupSecretStore(applicationContext, "local") }
+    val driveBackupPasswordCache: BackupPasswordCache by lazy { AndroidBackupSecretStore(applicationContext, "drive") }
     val snapshotExporter: SnapshotExporter by lazy { SnapshotExporter(database) }
     val snapshotImporter: SnapshotImporter by lazy { SnapshotImporter(database) }
+    val preRestoreBackupStore: PreRestoreBackupStore by lazy { PreRestoreBackupStore(applicationContext, snapshotExporter, snapshotImporter) }
     val localBackupStore: LocalBackupStore by lazy {
         LocalBackupStore(
             DocumentTreeAccess(applicationContext),
             userPreferences,
             snapshotExporter,
             snapshotImporter,
-            backupPasswordCache,
+            localBackupPasswordCache,
+            preRestoreBackupStore,
         )
     }
     val driveAuthorizationClient: DriveAuthorizationClient by lazy { DriveAuthorizationClient(applicationContext) }
     val driveBackupStore: DriveBackupStore by lazy {
-        DriveBackupStore(DriveRestClient(), snapshotExporter, snapshotImporter)
+        DriveBackupStore(DriveRestClient(), snapshotExporter, snapshotImporter, preRestoreBackupStore)
     }
     val dataDeletionUseCase: DataDeletionUseCase by lazy {
         DataDeletionUseCase(
@@ -73,7 +77,12 @@ class AppContainer(
                 recurringRepository,
                 categoryRepository,
             ),
-            clearPrivatePreferences = userPreferences::clearPrivateState,
+            clearPrivatePreferences = {
+                userPreferences.clearPrivateState()
+                localBackupPasswordCache.clear()
+                driveBackupPasswordCache.clear()
+                preRestoreBackupStore.clear()
+            },
             inTransaction = { operation -> database.withTransaction { operation() } },
         )
     }

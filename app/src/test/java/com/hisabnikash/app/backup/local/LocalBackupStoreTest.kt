@@ -13,6 +13,8 @@ import com.hisabnikash.app.data.preferences.LocalBackupPreferences
 import com.hisabnikash.app.data.preferences.UserPreferenceState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.async
+import kotlinx.coroutines.Dispatchers
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -74,6 +76,20 @@ class LocalBackupStoreTest {
         assertEquals(before.copy(exportedAtEpochMillis = 0), SnapshotExporter(database) { 0 }.export())
     }
 
+    @Test
+    fun `manual and queued backup writes are serialized`() = runTest {
+        val documents = FakeDocuments(writeDelayMillis = 30)
+        val preferences = FakePreferences(UserPreferenceState(localBackupEnabled = true, localBackupUri = "content://provider/tree/backups"))
+        val store = store(documents, preferences, FakeSecrets())
+
+        listOf(
+            async(Dispatchers.Default) { store.backUpNow("backup-pass".toCharArray()) },
+            async(Dispatchers.Default) { store.backUpNow("backup-pass".toCharArray()) },
+        ).forEach { it.await() }
+
+        assertEquals(1, documents.maxConcurrentWrites.get())
+    }
+
     private fun store(documents: FakeDocuments, preferences: FakePreferences, secrets: FakeSecrets) = LocalBackupStore(
         documentAccess = documents,
         preferences = preferences,
@@ -84,16 +100,23 @@ class LocalBackupStoreTest {
     )
 }
 
-private class FakeDocuments(private val available: Boolean = true) : LocalDocumentAccess {
+private class FakeDocuments(private val available: Boolean = true, private val writeDelayMillis: Long = 0) : LocalDocumentAccess {
     var persistedTree: Uri? = null
     var lastFileName: String? = null
     var lastBytes: ByteArray? = null
     var readBytes: ByteArray = byteArrayOf()
+    private val activeWrites = java.util.concurrent.atomic.AtomicInteger()
+    val maxConcurrentWrites = java.util.concurrent.atomic.AtomicInteger()
     override fun persistTreeAccess(uri: Uri): Boolean { persistedTree = uri; return available }
     override fun writeAtomically(treeUri: Uri, fileName: String, bytes: ByteArray) {
         if (!available) throw BackupLocationUnavailableException()
-        lastFileName = fileName
-        lastBytes = bytes.copyOf()
+        val active = activeWrites.incrementAndGet()
+        maxConcurrentWrites.updateAndGet { maxOf(it, active) }
+        try {
+            if (writeDelayMillis > 0) Thread.sleep(writeDelayMillis)
+            lastFileName = fileName
+            lastBytes = bytes.copyOf()
+        } finally { activeWrites.decrementAndGet() }
     }
     override fun read(uri: Uri): ByteArray = readBytes
 }

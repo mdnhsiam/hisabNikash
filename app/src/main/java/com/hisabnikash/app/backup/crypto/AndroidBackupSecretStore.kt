@@ -20,8 +20,10 @@ interface BackupPasswordCache {
     fun clear()
 }
 
-class AndroidBackupSecretStore(context: Context) : BackupPasswordCache {
-    private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+class AndroidBackupSecretStore(context: Context, namespace: String = "default") : BackupPasswordCache {
+    private val preferencesName = "${PREFERENCES_NAME}_$namespace"
+    private val keyAlias = "${KEY_ALIAS}_$namespace"
+    private val preferences = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
 
     override fun save(password: CharArray) {
         val encoded = StandardCharsets.UTF_8.encode(CharBuffer.wrap(password))
@@ -61,14 +63,15 @@ class AndroidBackupSecretStore(context: Context) : BackupPasswordCache {
 
     override fun clear() {
         preferences.edit { clear() }
+        runCatching { KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.deleteEntry(keyAlias) }
     }
 
     private fun getOrCreateKey(): SecretKey {
         val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-        (keyStore.getKey(KEY_ALIAS, null) as? SecretKey)?.let { return it }
+        (keyStore.getKey(keyAlias, null) as? SecretKey)?.let { return it }
         return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").run {
             init(
-                KeyGenParameterSpec.Builder(KEY_ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+                KeyGenParameterSpec.Builder(keyAlias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                     .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                     .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                     .build(),

@@ -17,6 +17,6 @@ Build locally with Android Studio's bundled JDK:
 
 The final APK SHA-256 is recorded below after the release build:
 
-`f3d896139ef15fc05820603fbef053659f243fef335f20ea390964fdc4a9b96e`
+`5e96ce61e54cd4033c15d217f529ebb29092ae00f15723a368a97891e78d8206`
 
 See [manual-release-checklist.md](docs/testing/manual-release-checklist.md) for device checks and [data-handling.md](docs/privacy/data-handling.md) for privacy/security details.

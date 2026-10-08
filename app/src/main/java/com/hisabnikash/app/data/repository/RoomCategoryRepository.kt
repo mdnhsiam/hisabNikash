@@ -11,6 +11,7 @@ class RoomCategoryRepository(
     private val categoryDao: CategoryDao,
     private val onDataChanged: () -> Unit = {},
 ) : CategoryRepository {
+    override fun observeAll(): Flow<List<Category>> = categoryDao.observeAll().map { rows -> rows.map(CategoryEntity::toDomain) }
     override fun observeActive(type: CategoryType): Flow<List<Category>> =
         categoryDao.observeActive(type).map { rows -> rows.map(CategoryEntity::toDomain) }
 

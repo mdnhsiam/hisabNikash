@@ -33,7 +33,9 @@ class NotificationFactory(private val context: Context) {
         val reviewIntent = PendingIntent.getActivity(
             context,
             item.id.hashCode(),
-            Intent(context, MainActivity::class.java).putExtra(EXTRA_RECURRING_ID, item.id),
+            Intent(context, MainActivity::class.java)
+                .putExtra(EXTRA_RECURRING_ID, item.id)
+                .putExtra(EXTRA_DUE_AT, item.nextDueAtEpochMillis),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -42,26 +44,31 @@ class NotificationFactory(private val context: Context) {
             .setContentText(MoneyFormatter.formatMinorUnits(item.amountMinor))
             .setContentIntent(reviewIntent)
             .setAutoCancel(true)
-            .addAction(0, context.getString(R.string.confirm), action(item.id, ReminderReceiver.ACTION_CONFIRM, 1))
-            .addAction(0, context.getString(R.string.skip), action(item.id, ReminderReceiver.ACTION_SKIP, 2))
-            .addAction(0, context.getString(R.string.disable), action(item.id, ReminderReceiver.ACTION_DISABLE, 3))
-            .build()
+            .addAction(0, context.getString(R.string.skip), action(item, ReminderReceiver.ACTION_SKIP, 2))
+            .addAction(0, context.getString(R.string.disable), action(item, ReminderReceiver.ACTION_DISABLE, 3))
+        if (item.reminderStyle == com.hisabnikash.app.core.model.ReminderStyle.QUICK_CONFIRM) {
+            notification.addAction(0, context.getString(R.string.confirm), action(item, ReminderReceiver.ACTION_CONFIRM, 1))
+        }
+        val built = notification.build()
         try {
-            NotificationManagerCompat.from(context).notify(item.id.hashCode(), notification)
+            NotificationManagerCompat.from(context).notify(item.id.hashCode(), built)
         } catch (_: SecurityException) {
             // Permission can be revoked between the explicit check and this call.
         }
     }
 
-    private fun action(id: String, action: String, offset: Int): PendingIntent = PendingIntent.getBroadcast(
+    private fun action(item: RecurringItem, action: String, offset: Int): PendingIntent = PendingIntent.getBroadcast(
         context,
-        id.hashCode() + offset,
-        Intent(context, ReminderReceiver::class.java).setAction(action).putExtra(EXTRA_RECURRING_ID, id),
+        item.id.hashCode() + offset,
+        Intent(context, ReminderReceiver::class.java).setAction(action)
+            .putExtra(EXTRA_RECURRING_ID, item.id)
+            .putExtra(EXTRA_DUE_AT, item.nextDueAtEpochMillis),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
     companion object {
         const val CHANNEL_ID = "recurring_reminders"
         const val EXTRA_RECURRING_ID = "recurring_id"
+        const val EXTRA_DUE_AT = "recurring_due_at"
     }
 }

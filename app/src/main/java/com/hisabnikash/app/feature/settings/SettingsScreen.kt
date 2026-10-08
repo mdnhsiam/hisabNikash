@@ -13,6 +13,9 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.hisabnikash.app.R
 import com.hisabnikash.app.data.preferences.AppLanguage
 import com.hisabnikash.app.data.preferences.UserPreferenceState
+import com.hisabnikash.app.core.model.Category
 
 @Composable
 fun SettingsScreen(
@@ -43,6 +47,11 @@ fun SettingsScreen(
     onDriveBackUpNow: (CharArray) -> Unit,
     onDriveRestoreLatest: (CharArray) -> Unit,
     onDisconnectDrive: () -> Unit,
+    showUndoRestore: Boolean,
+    onUndoRestore: (CharArray) -> Unit,
+    categories: List<Category>,
+    onRenameCategory: (Category, String) -> Unit,
+    onArchiveCategory: (Category) -> Unit,
     modifier: Modifier = Modifier,
     recurringContent: @Composable () -> Unit = {},
 ) {
@@ -52,6 +61,7 @@ fun SettingsScreen(
     var restorePassword by remember(restoreDocumentUri) { mutableStateOf("") }
     var drivePasswordAction by remember { mutableStateOf<DrivePasswordAction?>(null) }
     var drivePassword by remember { mutableStateOf("") }
+    var editingCategory by remember { mutableStateOf<Category?>(null) }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
         Text(stringResource(R.string.language), style = MaterialTheme.typography.titleMedium)
@@ -60,6 +70,19 @@ fun SettingsScreen(
         }
         LanguageOption(R.string.language_english, state.language == AppLanguage.ENGLISH) {
             onLanguageChange(AppLanguage.ENGLISH)
+        }
+
+        val customCategories = categories.filterNot { it.isSystem }.filter { it.isActive }
+        Text(stringResource(R.string.manage_categories), style = MaterialTheme.typography.titleMedium)
+        if (customCategories.isEmpty()) Text(stringResource(R.string.no_custom_categories), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        customCategories.forEach { category ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(category.nameBn.ifBlank { category.nameEn }, modifier = Modifier.padding(top = 12.dp))
+                Row {
+                    TextButton(onClick = { editingCategory = category }) { Text(stringResource(R.string.rename)) }
+                    TextButton(onClick = { onArchiveCategory(category) }) { Text(stringResource(R.string.archive)) }
+                }
+            }
         }
 
         if (!state.localBackupEnabled && !state.driveBackupEnabled && !state.guestWarningDismissed) {
@@ -84,6 +107,9 @@ fun SettingsScreen(
             Button(onClick = onChooseBackupLocation) { Text(stringResource(R.string.choose_backup_folder)) }
         }
         TextButton(onClick = onChooseRestoreDocument) { Text(stringResource(R.string.restore_from_backup)) }
+        if (showUndoRestore) {
+            TextButton(onClick = { drivePasswordAction = DrivePasswordAction.UNDO }) { Text(stringResource(R.string.undo_last_restore)) }
+        }
 
         Text(stringResource(R.string.drive_backup_title), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.drive_backup_explanation), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -142,6 +168,7 @@ fun SettingsScreen(
     restoreDocumentUri?.let { uri ->
         PasswordDialog(
             titleRes = R.string.restore_password,
+            warningRes = R.string.restore_replacement_warning,
             password = restorePassword,
             onPasswordChange = { restorePassword = it },
             onConfirm = { onRestore(uri, restorePassword.toCharArray()); restorePassword = ""; onDismissRestore() },
@@ -152,20 +179,36 @@ fun SettingsScreen(
     drivePasswordAction?.let { action ->
         PasswordDialog(
             titleRes = if (action == DrivePasswordAction.BACKUP) R.string.backup_password else R.string.restore_password,
+            warningRes = if (action == DrivePasswordAction.BACKUP) null else R.string.restore_replacement_warning,
             password = drivePassword,
             onPasswordChange = { drivePassword = it },
             onConfirm = {
                 val value = drivePassword.toCharArray()
-                if (action == DrivePasswordAction.BACKUP) onDriveBackUpNow(value) else onDriveRestoreLatest(value)
+                when (action) {
+                    DrivePasswordAction.BACKUP -> onDriveBackUpNow(value)
+                    DrivePasswordAction.RESTORE -> onDriveRestoreLatest(value)
+                    DrivePasswordAction.UNDO -> onUndoRestore(value)
+                }
                 drivePassword = ""
                 drivePasswordAction = null
             },
             onDismiss = { drivePassword = ""; drivePasswordAction = null },
         )
     }
+
+    editingCategory?.let { category ->
+        var name by remember(category.id) { mutableStateOf(category.nameBn.ifBlank { category.nameEn }) }
+        AlertDialog(
+            onDismissRequest = { editingCategory = null },
+            title = { Text(stringResource(R.string.rename_category)) },
+            text = { OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.category)) }) },
+            confirmButton = { Button(onClick = { onRenameCategory(category, name); editingCategory = null }, enabled = name.isNotBlank()) { Text(stringResource(R.string.save)) } },
+            dismissButton = { TextButton(onClick = { editingCategory = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
 }
 
-private enum class DrivePasswordAction { BACKUP, RESTORE }
+private enum class DrivePasswordAction { BACKUP, RESTORE, UNDO }
 
 @Composable
 private fun LanguageOption(labelRes: Int, selected: Boolean, onSelect: () -> Unit) {
@@ -178,6 +221,7 @@ private fun LanguageOption(labelRes: Int, selected: Boolean, onSelect: () -> Uni
 @Composable
 private fun PasswordDialog(
     titleRes: Int,
+    warningRes: Int? = null,
     password: String,
     onPasswordChange: (String) -> Unit,
     onConfirm: () -> Unit,
@@ -188,8 +232,15 @@ private fun PasswordDialog(
         title = { Text(stringResource(titleRes)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(password, onPasswordChange, label = { Text(stringResource(R.string.password)) })
+                OutlinedTextField(
+                    password,
+                    onPasswordChange,
+                    label = { Text(stringResource(R.string.password)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                )
                 Text(stringResource(R.string.password_warning), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                warningRes?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
             }
         },
         confirmButton = { Button(onClick = onConfirm, enabled = password.length >= 8) { Text(stringResource(R.string.confirm)) } },

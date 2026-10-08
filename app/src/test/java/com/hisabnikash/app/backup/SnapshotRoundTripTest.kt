@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,5 +53,22 @@ class SnapshotRoundTripTest {
         assertEquals(RestoreResult.Success, importer.apply(validated))
 
         assertEquals(original, repository.observeAll().first().single())
+    }
+
+    @Test
+    fun `apply phase failure rolls back every replacement`() = runTest {
+        val repository = RoomTransactionRepository(database)
+        val current = Transaction("current", TransactionType.INCOME, 50_000, "Current", null, paymentMethod = PaymentMethod.BANK, occurredAtEpochMillis = 10, createdAtEpochMillis = 10)
+        repository.add(current)
+        val replacement = SnapshotExporter(database) { 20 }.export().copy(
+            transactions = listOf(database.snapshotDao().transactions().single().copy(id = "replacement", description = "Replacement")),
+        )
+        val failing = SnapshotImporter(database, BackupCrypto(10_000), beforeCommit = { error("simulated commit failure") })
+        val bytes = failing.encode(replacement, "backup-pass".toCharArray())
+
+        val result = failing.apply(failing.validate(bytes, "backup-pass".toCharArray()))
+
+        assertTrue(result is RestoreResult.Failed)
+        assertEquals(listOf(current), repository.observeAll().first())
     }
 }

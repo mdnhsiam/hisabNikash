@@ -12,17 +12,19 @@ import kotlinx.coroutines.launch
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val id = intent.getStringExtra(NotificationFactory.EXTRA_RECURRING_ID) ?: return
+        val expectedDueAt = intent.getLongExtra(NotificationFactory.EXTRA_DUE_AT, Long.MIN_VALUE)
         val pending = goAsync()
         val container = (context.applicationContext as HisabApplication).container
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 when (intent.action) {
-                    ACTION_CONFIRM -> container.recurringRepository.confirmOccurrence(id)
+                    ACTION_CONFIRM -> container.recurringRepository.confirmOccurrence(id, expectedDueAt)
                     ACTION_SKIP -> container.recurringRepository.skipOccurrence(id)
                     ACTION_DISABLE -> container.recurringRepository.disable(id)
                 }
                 val updated = container.recurringRepository.find(id)
                 if (updated?.isEnabled == true) container.recurringScheduler.schedule(updated) else container.recurringScheduler.cancel(id)
+                androidx.core.app.NotificationManagerCompat.from(context).cancel(id.hashCode())
             } finally {
                 pending.finish()
             }

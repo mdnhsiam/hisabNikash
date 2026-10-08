@@ -3,6 +3,7 @@ package com.hisabnikash.app.core.time
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
+import java.util.Locale
 
 data class MonthKey(
     val year: Int,
@@ -12,7 +13,7 @@ data class MonthKey(
         require(month in 1..12) { "Month must be from 1 through 12" }
     }
 
-    val value: String get() = "%04d-%02d".format(year, month)
+    val value: String get() = String.format(Locale.ROOT, "%04d-%02d", year, month)
 
     fun previous(): MonthKey = fromYearMonth(yearMonth.minusMonths(1))
     fun next(): MonthKey = fromYearMonth(yearMonth.plusMonths(1))

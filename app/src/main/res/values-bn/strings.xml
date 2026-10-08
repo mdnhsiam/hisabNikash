@@ -126,4 +126,17 @@
     <string name="drive_backup_success">এনক্রিপ্টেড Drive ব্যাকআপ সেভ হয়েছে।</string>
     <string name="drive_backup_failed">Drive ব্যাকআপ হয়নি। ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন।</string>
     <string name="drive_disconnected">Google Drive ব্যাকআপ বিচ্ছিন্ন হয়েছে।</string>
+    <string name="undo_last_restore">শেষ রিস্টোর ফিরিয়ে নিন</string>
+    <string name="restore_undo_success">আগের লোকাল ডাটা ফিরিয়ে আনা হয়েছে।</string>
+    <string name="operation_failed">সেভ করা যায়নি। তথ্যগুলো দেখে আবার চেষ্টা করুন।</string>
+    <string name="insufficient_or_invalid_savings">উপলভ্য সঞ্চয়ের মধ্যে সঠিক পরিমাণ লিখুন।</string>
+    <string name="manage_categories">কাস্টম ক্যাটাগরি</string>
+    <string name="no_custom_categories">সেভ করা কাস্টম ক্যাটাগরি এখানে দেখা যাবে।</string>
+    <string name="rename">নাম বদলান</string>
+    <string name="archive">আর্কাইভ</string>
+    <string name="rename_category">ক্যাটাগরির নাম বদলান</string>
+    <string name="next_due_date">পরবর্তী তারিখ (YYYY-MM-DD)</string>
+    <string name="frequency_monthly">প্রতি মাসে পুনরাবৃত্তি হবে</string>
+    <string name="transaction_date">তারিখ (YYYY-MM-DD)</string>
+    <string name="restore_replacement_warning">রিস্টোর করলে বর্তমান লোকাল ডাটা বদলে যাবে। এই ডিভাইসে এনক্রিপ্টেড আনডু কপি রাখা হবে।</string>
 </resources>

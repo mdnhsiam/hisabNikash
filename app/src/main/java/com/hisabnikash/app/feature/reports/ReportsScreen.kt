@@ -21,6 +21,7 @@ import com.hisabnikash.app.core.money.MoneyFormatter
 import com.hisabnikash.app.ui.components.SummaryCard
 import com.hisabnikash.app.ui.components.localizedLabel
 import com.hisabnikash.app.core.time.localizedLabel
+import com.hisabnikash.app.ui.components.localizedName
 
 @Composable
 fun ReportsScreen(
@@ -45,7 +46,7 @@ fun ReportsScreen(
         Text(stringResource(R.string.by_category), style = MaterialTheme.typography.titleMedium)
         if (report.expenseByCategory.isEmpty()) Text(stringResource(R.string.no_expenses_this_month))
         report.expenseByCategory.forEach { (category, amount) ->
-            BreakdownRow(category ?: stringResource(R.string.uncategorized), amount)
+            BreakdownRow(category?.let { state.categories[it]?.localizedName(locale.language == "bn") ?: it } ?: stringResource(R.string.uncategorized), amount)
         }
         Text(stringResource(R.string.by_payment_method), style = MaterialTheme.typography.titleMedium)
         report.expenseByPaymentMethod.forEach { (method, amount) -> BreakdownRow(method.localizedLabel(), amount) }

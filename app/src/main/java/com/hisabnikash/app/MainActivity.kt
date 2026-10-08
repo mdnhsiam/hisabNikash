@@ -2,6 +2,7 @@ package com.hisabnikash.app
 
 import android.content.Context
 import android.os.Bundle
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -11,8 +12,10 @@ import com.hisabnikash.app.data.preferences.UserPreferences
 import com.hisabnikash.app.feature.settings.LanguageController
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import androidx.compose.runtime.mutableStateOf
 
 class MainActivity : ComponentActivity() {
+    private val requestedRecurringId = mutableStateOf<String?>(null)
     override fun attachBaseContext(newBase: Context) {
         val language = runBlocking { UserPreferences.create(newBase).state.first().language }
         super.attachBaseContext(LanguageController.localizedContext(newBase, language))
@@ -20,11 +23,22 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedRecurringId.value = intent.getStringExtra(com.hisabnikash.app.feature.recurring.NotificationFactory.EXTRA_RECURRING_ID)
         enableEdgeToEdge()
         setContent {
             HisabTheme {
-                HisabNavHost(container = (application as HisabApplication).container)
+                HisabNavHost(
+                    container = (application as HisabApplication).container,
+                    requestedRecurringId = requestedRecurringId.value,
+                    onRecurringRequestConsumed = { requestedRecurringId.value = null },
+                )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        requestedRecurringId.value = intent.getStringExtra(com.hisabnikash.app.feature.recurring.NotificationFactory.EXTRA_RECURRING_ID)
     }
 }

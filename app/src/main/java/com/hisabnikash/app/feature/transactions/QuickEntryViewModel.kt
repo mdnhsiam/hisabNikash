@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 
 class QuickEntryViewModel(
     private val transactionRepository: TransactionRepository,
@@ -31,6 +32,7 @@ class QuickEntryViewModel(
     private val mutableState = MutableStateFlow(QuickEntryState(occurredAtEpochMillis = nowEpochMillis()))
     val state: StateFlow<QuickEntryState> = mutableState.asStateFlow()
     private var categoryJob: Job? = null
+    private val submitMutex = Mutex()
 
     init {
         viewModelScope.launch {
@@ -56,8 +58,11 @@ class QuickEntryViewModel(
     fun setPaymentMethod(method: PaymentMethod) = mutableState.update { it.copy(paymentMethod = method) }
     fun setNote(value: String) = mutableState.update { it.copy(note = value) }
     fun setOccurredAt(epochMillis: Long) = mutableState.update { it.copy(occurredAtEpochMillis = epochMillis) }
+    fun startNewEntry() = mutableState.update { it.copy(occurredAtEpochMillis = nowEpochMillis()) }
 
     suspend fun submit(intentionalDuplicate: Boolean = false): SubmitResult {
+        if (!submitMutex.tryLock()) return SubmitResult.InProgress
+        return try {
         val current = mutableState.value
         val amount = MoneyParser.parseToMinorUnits(current.amountInput)
         val errors = buildMap {
@@ -124,6 +129,9 @@ class QuickEntryViewModel(
         } catch (error: Exception) {
             mutableState.update { it.copy(isSaving = false, saveError = R.string.error_save_transaction) }
             SubmitResult.Failed(R.string.error_save_transaction)
+        }
+        } finally {
+            submitMutex.unlock()
         }
     }
 

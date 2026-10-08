@@ -34,11 +34,12 @@ class RoomRecurringRepository(
     override suspend fun delete(id: String) { dao.deleteById(id); onDataChanged() }
     override suspend fun clearAll() { dao.deleteAll(); onDataChanged() }
 
-    override suspend fun confirmOccurrence(id: String, edits: RecurringEditor?): Transaction {
+    override suspend fun confirmOccurrence(id: String, expectedDueAtEpochMillis: Long, edits: RecurringEditor?): Transaction {
         val now = nowEpochMillis()
         return database.withTransaction {
             val item = requireNotNull(dao.findById(id)?.toDomain()) { "Recurring item not found" }
             require(item.isEnabled)
+            require(item.nextDueAtEpochMillis == expectedDueAtEpochMillis) { "Recurring occurrence is stale" }
             val transaction = item.toTransaction(edits, now, newId())
             transactionRepository.add(transaction)
             dao.upsert(item.copy(nextDueAtEpochMillis = RecurringDatePolicy.nextDue(item.nextDueAtEpochMillis, now), updatedAtEpochMillis = now).toEntity())

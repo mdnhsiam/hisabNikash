@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -95,6 +97,36 @@ class QuickEntryViewModelTest {
         assertEquals(PaymentMethod.NAGAD, fixture.paymentPreference.value)
     }
 
+    @Test
+    fun `overlapping submissions serialize duplicate check and write`() = runTest {
+        val repository = FakeTransactionRepository().apply { duplicateFromAdded = true; findDelayMillis = 10 }
+        val categories = FakeCategoryRepository()
+        val ids = sequenceOf("first", "second").iterator()
+        val viewModel = QuickEntryViewModel(repository, categories, FakePaymentMethodPreference(PaymentMethod.CASH), nowEpochMillis = { 100_000 }, newId = ids::next)
+        advanceUntilIdle()
+        viewModel.setAmount("125.50")
+        viewModel.setDescription("Lunch")
+        viewModel.setCategory("expense_food")
+
+        val first = async { viewModel.submit() }
+        val second = async { viewModel.submit() }
+        val results = listOf(first.await(), second.await())
+
+        assertEquals(1, repository.added.size)
+        assertEquals(1, results.count { it is SubmitResult.Saved })
+        assertEquals(1, results.count { it is SubmitResult.InProgress })
+    }
+
+    @Test
+    fun `opening a new entry refreshes the default transaction time`() = runTest {
+        var now = 100L
+        val viewModel = QuickEntryViewModel(FakeTransactionRepository(), FakeCategoryRepository(), FakePaymentMethodPreference(PaymentMethod.CASH), nowEpochMillis = { now })
+        advanceUntilIdle()
+        now = 200L
+        viewModel.startNewEntry()
+        assertEquals(200L, viewModel.state.value.occurredAtEpochMillis)
+    }
+
     private class Fixture(lastPaymentMethod: PaymentMethod = PaymentMethod.CASH) {
         val transactions = FakeTransactionRepository()
         val categories = FakeCategoryRepository()
@@ -127,6 +159,8 @@ internal class FakeTransactionRepository : TransactionRepository {
     var customCategory: Category? = null
     var possibleDuplicate: Transaction? = null
     var failNextAdd = false
+    var duplicateFromAdded = false
+    var findDelayMillis = 0L
 
     override fun observeAll(): Flow<List<Transaction>> = flow
     override suspend fun add(transaction: Transaction) = save(transaction)
@@ -148,7 +182,10 @@ internal class FakeTransactionRepository : TransactionRepository {
     override suspend fun delete(id: String) {
         flow.value = flow.value.filterNot { it.id == id }
     }
-    override suspend fun findPossibleDuplicate(candidate: Transaction): Transaction? = possibleDuplicate
+    override suspend fun findPossibleDuplicate(candidate: Transaction): Transaction? {
+        if (findDelayMillis > 0) delay(findDelayMillis)
+        return possibleDuplicate ?: if (duplicateFromAdded) added.firstOrNull { com.hisabnikash.app.data.repository.TransactionDuplicatePolicy.isPossibleDuplicate(it, candidate) } else null
+    }
 }
 
 internal class FakeCategoryRepository : CategoryRepository {
@@ -162,6 +199,7 @@ internal class FakeCategoryRepository : CategoryRepository {
         listOf(Category("income_salary", CategoryType.INCOME, "Salary", "বেতন", 0, true)),
     )
     override fun observeActive(type: CategoryType): Flow<List<Category>> = if (type == CategoryType.EXPENSE) expense else income
+    override fun observeAll(): Flow<List<Category>> = kotlinx.coroutines.flow.combine(expense, income) { a, b -> a + b }
     override suspend fun add(category: Category) = Unit
     override suspend fun update(category: Category) = Unit
     override suspend fun archive(id: String) = Unit

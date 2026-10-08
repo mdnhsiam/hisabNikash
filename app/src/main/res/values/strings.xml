@@ -126,4 +126,17 @@
     <string name="drive_backup_success">Encrypted Drive backup saved.</string>
     <string name="drive_backup_failed">Drive backup failed. Check your connection and try again.</string>
     <string name="drive_disconnected">Google Drive backup disconnected.</string>
+    <string name="undo_last_restore">Undo last restore</string>
+    <string name="restore_undo_success">Previous local data restored.</string>
+    <string name="operation_failed">Could not save. Check the fields and try again.</string>
+    <string name="insufficient_or_invalid_savings">Enter a valid amount within available savings.</string>
+    <string name="manage_categories">Custom categories</string>
+    <string name="no_custom_categories">Saved custom categories will appear here.</string>
+    <string name="rename">Rename</string>
+    <string name="archive">Archive</string>
+    <string name="rename_category">Rename category</string>
+    <string name="next_due_date">Next due date (YYYY-MM-DD)</string>
+    <string name="frequency_monthly">Repeats monthly</string>
+    <string name="transaction_date">Date (YYYY-MM-DD)</string>
+    <string name="restore_replacement_warning">Restoring replaces current local data. An encrypted undo copy will be kept on this device.</string>
 </resources>
