@@ -2,6 +2,8 @@ package com.hisabnikash.app.data.repository
 
 import androidx.room.withTransaction
 import com.hisabnikash.app.core.model.Budget
+import com.hisabnikash.app.core.model.CategoryType
+import com.hisabnikash.app.core.money.FinancialLimits
 import com.hisabnikash.app.core.time.MonthKey
 import com.hisabnikash.app.data.db.HisabDatabase
 import com.hisabnikash.app.data.db.entity.BudgetEntity
@@ -18,8 +20,11 @@ class RoomBudgetRepository(
         dao.observeMonth(month.value).map { rows -> rows.map(BudgetEntity::toDomain) }
 
     override suspend fun upsert(budget: Budget) {
-        require(budget.amountMinor > 0)
+        require(budget.id.isNotBlank())
+        FinancialLimits.requirePositive(budget.amountMinor)
+        require(MonthKey.parse(budget.monthKey).value == budget.monthKey)
         database.withTransaction {
+            budget.categoryId?.let { require(database.categoryDao().findById(it)?.type == CategoryType.EXPENSE) }
             dao.find(budget.monthKey, budget.categoryId)?.takeIf { it.id != budget.id }?.let { dao.deleteById(it.id) }
             dao.upsert(budget.toEntity())
         }

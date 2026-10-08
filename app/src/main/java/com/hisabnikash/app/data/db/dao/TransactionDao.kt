@@ -32,7 +32,10 @@ interface TransactionDao {
     suspend fun insert(transaction: TransactionEntity)
 
     @Update
-    suspend fun update(transaction: TransactionEntity)
+    suspend fun update(transaction: TransactionEntity): Int
+
+    @Query("SELECT COALESCE(SUM(amountMinor), 0) FROM transactions WHERE id != :excludedId")
+    suspend fun totalAmountExcluding(excludedId: String): Long
 
     @Query("DELETE FROM transactions WHERE id = :id")
     suspend fun deleteById(id: String)

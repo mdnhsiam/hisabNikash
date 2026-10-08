@@ -145,4 +145,47 @@ class RoomRepositoryJvmIntegrationTest {
         occurredAtEpochMillis = 100_000,
         createdAtEpochMillis = 100_000,
     )
+
+    @Test fun `repository rejects category type mismatch`() = runTest {
+        val outcome = runCatching { transactions.add(expense("bad-type", "expense_food").copy(type = TransactionType.INCOME)) }
+        assertTrue(outcome.exceptionOrNull() is IllegalArgumentException)
+        assertTrue(transactions.observeAll().first().isEmpty())
+    }
+
+    @Test fun `repository rejects amounts beyond parser supported range`() = runTest {
+        val outcome = runCatching { transactions.add(expense("huge", "expense_food").copy(amountMinor = Long.MAX_VALUE)) }
+        assertTrue(outcome.exceptionOrNull() is IllegalArgumentException)
+        assertTrue(transactions.observeAll().first().isEmpty())
+    }
+
+    @Test fun `SQL metacharacters are stored as values and never executed`() = runTest {
+        val text = "'); DROP TABLE transactions; -- বাংলা"
+        transactions.add(expense("sql", "expense_food").copy(description = text, note = text))
+        assertEquals(text, transactions.observeAll().first().single().description)
+        assertEquals(text, transactions.observeAll().first().single().note)
+        assertEquals(9, categories.observeActive(CategoryType.EXPENSE).first().size)
+    }
+
+    @Test fun `update of a missing row is not reported as a successful save`() = runTest {
+        assertTrue(runCatching { transactions.update(expense("missing", "expense_food")) }.isFailure)
+    }
+
+    @Test fun `budget cannot use a malformed month`() = runTest {
+        val budgets = RoomBudgetRepository(database)
+        assertTrue(runCatching { budgets.upsert(com.hisabnikash.app.core.model.Budget("bad-month", "2025-99", null, 100, 0)) }.isFailure)
+        assertTrue(database.snapshotDao().budgets().isEmpty())
+    }
+
+    @Test fun `budget cannot use an income category`() = runTest {
+        assertTrue(runCatching { RoomBudgetRepository(database).upsert(com.hisabnikash.app.core.model.Budget("bad-type", "2025-01", "income_salary", 100, 0)) }.isFailure)
+    }
+
+    @Test fun `goal target uses the supported money range`() = runTest {
+        assertTrue(runCatching { RoomSavingsRepository(database).upsertGoal(SavingsGoal("huge", "Huge", Long.MAX_VALUE, createdAtEpochMillis = 0)) }.isFailure)
+    }
+
+    @Test fun `recurring amount uses the supported money range`() = runTest {
+        assertTrue(runCatching { RoomRecurringRepository(database, transactions).upsert(RecurringItem("huge", TransactionType.EXPENSE,
+            Long.MAX_VALUE, "Huge", "expense_food", PaymentMethod.CASH, nextDueAtEpochMillis = 100, createdAtEpochMillis = 0)) }.isFailure)
+    }
 }

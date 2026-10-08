@@ -3,6 +3,9 @@ package com.hisabnikash.app.data.repository
 import androidx.room.withTransaction
 import com.hisabnikash.app.core.model.RecurringItem
 import com.hisabnikash.app.core.model.Transaction
+import com.hisabnikash.app.core.model.CategoryType
+import com.hisabnikash.app.core.model.TransactionType
+import com.hisabnikash.app.core.money.FinancialLimits
 import com.hisabnikash.app.data.db.HisabDatabase
 import com.hisabnikash.app.data.db.entity.RecurringItemEntity
 import com.hisabnikash.app.feature.recurring.RecurringDatePolicy
@@ -25,9 +28,14 @@ class RoomRecurringRepository(
     override suspend fun find(id: String): RecurringItem? = dao.findById(id)?.toDomain()
 
     override suspend fun upsert(item: RecurringItem) {
-        require(item.amountMinor > 0)
+        require(item.id.isNotBlank())
+        FinancialLimits.requirePositive(item.amountMinor)
         require(item.description.isNotBlank())
-        dao.upsert(item.toEntity())
+        database.withTransaction {
+            val expected = if (item.type == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
+            item.categoryId?.let { require(database.categoryDao().findById(it)?.type == expected) }
+            dao.upsert(item.toEntity())
+        }
         onDataChanged()
     }
 

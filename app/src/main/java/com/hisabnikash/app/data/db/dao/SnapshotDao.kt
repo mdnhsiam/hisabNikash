@@ -27,12 +27,12 @@ interface SnapshotDao {
     @Query("DELETE FROM savings_goals") suspend fun deleteSavingsGoals()
     @Query("DELETE FROM categories") suspend fun deleteCategories()
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertCategories(rows: List<CategoryEntity>)
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertTransactions(rows: List<TransactionEntity>)
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertBudgets(rows: List<BudgetEntity>)
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertSavingsGoals(rows: List<SavingsGoalEntity>)
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertGoalAllocations(rows: List<GoalAllocationEntity>)
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertRecurringItems(rows: List<RecurringItemEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertCategories(rows: List<CategoryEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertTransactions(rows: List<TransactionEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertBudgets(rows: List<BudgetEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertSavingsGoals(rows: List<SavingsGoalEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertGoalAllocations(rows: List<GoalAllocationEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertRecurringItems(rows: List<RecurringItemEntity>)
 
     suspend fun replaceAll(
         categories: List<CategoryEntity>,

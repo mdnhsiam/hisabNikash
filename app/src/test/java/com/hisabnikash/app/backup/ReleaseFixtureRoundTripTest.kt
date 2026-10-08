@@ -24,6 +24,7 @@ import com.hisabnikash.app.domain.FinanceCalculator
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -58,6 +59,18 @@ class ReleaseFixtureRoundTripTest {
         assertEquals(original.copy(exportedAtEpochMillis = restored.exportedAtEpochMillis), restored)
         assertEquals(originalDashboard, FinanceCalculator.dashboard(restored.transactions.map { it.toDomain() }, restored.budgets.map { it.toDomain() }, restored.goalAllocations.map { it.toDomain() }, month))
         assertEquals(originalReport, FinanceCalculator.monthlyReport(restored.transactions.map { it.toDomain() }, month))
+    }
+
+    @Test fun `commit failure preserves every existing table not just transactions`() = runTest {
+        insertReleaseFixture(database)
+        val exporter = SnapshotExporter(database, nowEpochMillis = { 1 })
+        val before = exporter.export()
+        val replacement = before.copy(transactions = emptyList(), budgets = emptyList(), savingsGoals = emptyList(),
+            goalAllocations = emptyList(), recurringItems = emptyList())
+        val importer = SnapshotImporter(database, BackupCrypto(10_000), beforeCommit = { error("Disk failure") })
+        val encrypted = importer.encode(replacement, "backup-pass".toCharArray())
+        assertTrue(importer.apply(importer.validate(encrypted, "backup-pass".toCharArray())) is RestoreResult.Failed)
+        assertEquals(before, exporter.export())
     }
 }
 

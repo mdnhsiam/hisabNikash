@@ -102,4 +102,20 @@ class FinanceCalculatorTest {
         occurredAtEpochMillis = Instant.parse(instant).toEpochMilli(),
         createdAtEpochMillis = Instant.parse(instant).toEpochMilli(),
     )
+
+    @Test fun `budget percentage cannot overflow for supported large expense records`() {
+        val amount = com.hisabnikash.app.core.money.MoneyParser.MAX_MINOR_UNITS
+        val summary = FinanceCalculator.dashboard((1..923).map {
+            transaction("expense-$it", TransactionType.EXPENSE, amount, "expense_food", PaymentMethod.CASH, "2025-01-01T00:00:00Z")
+        }, listOf(Budget("total", "2025-01", null, amount, 0)), emptyList(), january)
+        assertEquals(92_300, summary.budget!!.percentUsed)
+    }
+
+    @Test(expected = ArithmeticException::class)
+    fun `unsupported aggregate does not silently wrap into a negative income`() {
+        FinanceCalculator.dashboard(listOf(
+            transaction("a", TransactionType.INCOME, Long.MAX_VALUE, null, PaymentMethod.CASH, "2025-01-01T00:00:00Z"),
+            transaction("b", TransactionType.INCOME, Long.MAX_VALUE, null, PaymentMethod.CASH, "2025-01-01T00:00:00Z")
+        ), emptyList(), emptyList(), january)
+    }
 }

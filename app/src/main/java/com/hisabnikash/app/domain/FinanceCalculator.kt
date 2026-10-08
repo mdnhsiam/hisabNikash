@@ -22,10 +22,10 @@ object FinanceCalculator {
         val byCategory = linkedMapOf<String?, Long>()
         current.forEach { transaction ->
             when (transaction.type) {
-                TransactionType.INCOME -> income += transaction.amountMinor
+                TransactionType.INCOME -> income = Math.addExact(income, transaction.amountMinor)
                 TransactionType.EXPENSE -> {
-                    expense += transaction.amountMinor
-                    byCategory[transaction.categoryId] = (byCategory[transaction.categoryId] ?: 0L) + transaction.amountMinor
+                    expense = Math.addExact(expense, transaction.amountMinor)
+                    byCategory[transaction.categoryId] = Math.addExact(byCategory[transaction.categoryId] ?: 0L, transaction.amountMinor)
                 }
             }
         }
@@ -76,16 +76,16 @@ object FinanceCalculator {
         transactions.forEach { transaction ->
             when (transaction.occurredAtEpochMillis) {
                 in currentStart until currentEnd -> when (transaction.type) {
-                    TransactionType.INCOME -> income += transaction.amountMinor
+                    TransactionType.INCOME -> income = Math.addExact(income, transaction.amountMinor)
                     TransactionType.EXPENSE -> {
-                        expense += transaction.amountMinor
-                        byCategory[transaction.categoryId] = (byCategory[transaction.categoryId] ?: 0L) + transaction.amountMinor
-                        byPayment[transaction.paymentMethod] = (byPayment[transaction.paymentMethod] ?: 0L) + transaction.amountMinor
+                        expense = Math.addExact(expense, transaction.amountMinor)
+                        byCategory[transaction.categoryId] = Math.addExact(byCategory[transaction.categoryId] ?: 0L, transaction.amountMinor)
+                        byPayment[transaction.paymentMethod] = Math.addExact(byPayment[transaction.paymentMethod] ?: 0L, transaction.amountMinor)
                     }
                 }
                 in previousStart until currentStart -> when (transaction.type) {
-                    TransactionType.INCOME -> previousIncome += transaction.amountMinor
-                    TransactionType.EXPENSE -> previousExpense += transaction.amountMinor
+                    TransactionType.INCOME -> previousIncome = Math.addExact(previousIncome, transaction.amountMinor)
+                    TransactionType.EXPENSE -> previousExpense = Math.addExact(previousExpense, transaction.amountMinor)
                 }
             }
         }
@@ -97,7 +97,7 @@ object FinanceCalculator {
             expenseMinor = expense,
             netSavingsMinor = net,
             previousNetSavingsMinor = previousNet,
-            netChangeMinor = net - previousNet,
+            netChangeMinor = Math.subtractExact(net, previousNet),
             expenseByCategory = byCategory.toSortedMap(compareBy(nullsLast()) { it }),
             expenseByPaymentMethod = byPayment.toSortedMap(),
         )
@@ -110,7 +110,8 @@ private fun budgetStatus(limitMinor: Long, spentMinor: Long): BudgetStatus {
         limitMinor = limitMinor,
         spentMinor = spentMinor,
         remainingMinor = remaining,
-        percentUsed = if (limitMinor <= 0) 0 else ((spentMinor * 100L) / limitMinor).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+        percentUsed = if (limitMinor <= 0) 0 else java.math.BigInteger.valueOf(spentMinor).multiply(java.math.BigInteger.valueOf(100))
+            .divide(java.math.BigInteger.valueOf(limitMinor)).min(java.math.BigInteger.valueOf(Int.MAX_VALUE.toLong())).toInt(),
         isExceeded = remaining < 0,
     )
 }

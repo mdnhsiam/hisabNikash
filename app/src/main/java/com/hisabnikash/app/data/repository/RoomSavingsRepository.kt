@@ -3,6 +3,7 @@ package com.hisabnikash.app.data.repository
 import androidx.room.withTransaction
 import com.hisabnikash.app.core.model.GoalAllocation
 import com.hisabnikash.app.core.model.SavingsGoal
+import com.hisabnikash.app.core.money.FinancialLimits
 import com.hisabnikash.app.data.db.HisabDatabase
 import com.hisabnikash.app.data.db.entity.GoalAllocationEntity
 import com.hisabnikash.app.data.db.entity.SavingsGoalEntity
@@ -20,7 +21,8 @@ class RoomSavingsRepository(
 
     override suspend fun upsertGoal(goal: SavingsGoal) {
         require(goal.name.isNotBlank())
-        require(goal.targetMinor == null || goal.targetMinor > 0)
+        require(goal.id.isNotBlank())
+        goal.targetMinor?.let(FinancialLimits::requirePositive)
         dao.upsertGoal(goal.toEntity())
         onDataChanged()
     }

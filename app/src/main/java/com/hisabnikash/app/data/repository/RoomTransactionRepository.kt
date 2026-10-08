@@ -5,6 +5,9 @@ import com.hisabnikash.app.core.model.Category
 import com.hisabnikash.app.core.model.Transaction
 import com.hisabnikash.app.data.db.HisabDatabase
 import com.hisabnikash.app.data.db.entity.TransactionEntity
+import com.hisabnikash.app.core.money.FinancialLimits
+import com.hisabnikash.app.core.model.CategoryType
+import com.hisabnikash.app.core.model.TransactionType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -18,15 +21,17 @@ class RoomTransactionRepository(
         transactionDao.observeAll().map { rows -> rows.map(TransactionEntity::toDomain) }
 
     override suspend fun add(transaction: Transaction) {
-        validate(transaction)
-        transactionDao.insert(transaction.toEntity())
+        database.withTransaction {
+            validate(transaction)
+            transactionDao.insert(transaction.toEntity())
+        }
         onDataChanged()
     }
 
     override suspend fun addWithCustomCategory(transaction: Transaction, category: Category) {
-        validate(transaction)
         require(transaction.categoryId == category.id)
         database.withTransaction {
+            validate(transaction, category)
             database.categoryDao().insert(category.toEntity())
             transactionDao.insert(transaction.toEntity())
         }
@@ -34,8 +39,10 @@ class RoomTransactionRepository(
     }
 
     override suspend fun update(transaction: Transaction) {
-        validate(transaction)
-        transactionDao.update(transaction.toEntity())
+        database.withTransaction {
+            validate(transaction)
+            require(transactionDao.update(transaction.toEntity()) == 1) { "Transaction no longer exists" }
+        }
         onDataChanged()
     }
 
@@ -58,9 +65,18 @@ class RoomTransactionRepository(
             windowEnd = candidate.createdAtEpochMillis + TransactionDuplicatePolicy.WINDOW_MILLIS,
         )?.toDomain()
 
-    private fun validate(transaction: Transaction) {
-        require(transaction.amountMinor > 0) { "Amount must be positive" }
+    private suspend fun validate(transaction: Transaction, newCategory: Category? = null) {
+        require(transaction.id.isNotBlank())
+        FinancialLimits.requirePositive(transaction.amountMinor)
         require(transaction.description.isNotBlank()) { "Description is required" }
+        transaction.categoryId?.let { id ->
+            val type = newCategory?.takeIf { it.id == id }?.type ?: database.categoryDao().findById(id)?.type
+            val expected = if (transaction.type == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
+            require(type == expected) { "Category does not match transaction type" }
+        }
+        require(transactionDao.totalAmountExcluding(transaction.id) <= FinancialLimits.MAX_LEDGER_TOTAL_MINOR - transaction.amountMinor) {
+            "Ledger total exceeds the supported range"
+        }
     }
 }
 
