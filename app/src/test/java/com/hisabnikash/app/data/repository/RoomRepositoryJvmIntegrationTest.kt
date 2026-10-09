@@ -129,7 +129,7 @@ class RoomRepositoryJvmIntegrationTest {
         assertTrue(stale.isFailure)
         assertEquals(1, transactions.observeAll().first().size)
 
-        recurringRepository.skipOccurrence(item.id)
+        recurringRepository.skipOccurrence(item.id, advanced.nextDueAtEpochMillis)
         recurringRepository.disable(item.id)
         assertEquals(1, transactions.observeAll().first().size)
         assertFalse(recurringRepository.find(item.id)!!.isEnabled)
@@ -187,5 +187,37 @@ class RoomRepositoryJvmIntegrationTest {
     @Test fun `recurring amount uses the supported money range`() = runTest {
         assertTrue(runCatching { RoomRecurringRepository(database, transactions).upsert(RecurringItem("huge", TransactionType.EXPENSE,
             Long.MAX_VALUE, "Huge", "expense_food", PaymentMethod.CASH, nextDueAtEpochMillis = 100, createdAtEpochMillis = 0)) }.isFailure)
+    }
+
+    @Test fun `updating a goal preserves contribution history`() = runTest {
+        val savings = RoomSavingsRepository(database)
+        val goal = SavingsGoal("goal", "Original", null, createdAtEpochMillis = 0)
+        savings.upsertGoal(goal)
+        transactions.add(expense("income", "expense_food").copy(type = TransactionType.INCOME, categoryId = "income_salary"))
+        savings.allocate(GoalAllocation("a", "goal", 100, allocatedAtEpochMillis = 1))
+        savings.upsertGoal(goal.copy(name = "Renamed"))
+        assertEquals(1, savings.observeAllocations().first().size)
+    }
+
+    @Test fun `contribution cannot masquerade as a reversal`() = runTest {
+        val savings = RoomSavingsRepository(database)
+        savings.upsertGoal(SavingsGoal("goal", "Goal", null, createdAtEpochMillis = 0))
+        transactions.add(expense("income", "expense_food").copy(type = TransactionType.INCOME, categoryId = "income_salary"))
+        assertTrue(runCatching { savings.allocate(GoalAllocation("a", "goal", 100, allocatedAtEpochMillis = 1, reversesAllocationId = "missing")) }.isFailure)
+    }
+
+    @Test fun `stale skip and disabled skip leave the current occurrence unchanged`() = runTest {
+        val repository = RoomRecurringRepository(database, transactions, nowEpochMillis = { 1_000 })
+        val item = RecurringItem("bill", TransactionType.EXPENSE, 100, "Bill", "expense_bills", PaymentMethod.CASH,
+            nextDueAtEpochMillis = 100, createdAtEpochMillis = 0)
+        repository.upsert(item)
+        repository.skipOccurrence(item.id, 100)
+        val nextDue = repository.find(item.id)!!.nextDueAtEpochMillis
+        assertTrue(runCatching { repository.skipOccurrence(item.id, 100) }.isFailure)
+        assertEquals(nextDue, repository.find(item.id)!!.nextDueAtEpochMillis)
+        repository.disable(item.id)
+        assertTrue(runCatching { repository.skipOccurrence(item.id, nextDue) }.isFailure)
+        assertFalse(repository.find(item.id)!!.isEnabled)
+        assertTrue(transactions.observeAll().first().isEmpty())
     }
 }

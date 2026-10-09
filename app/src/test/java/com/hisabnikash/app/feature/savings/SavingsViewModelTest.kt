@@ -5,6 +5,7 @@ import com.hisabnikash.app.core.model.SavingsGoal
 import com.hisabnikash.app.data.repository.SavingsRepository
 import com.hisabnikash.app.feature.transactions.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -17,6 +18,42 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class SavingsViewModelTest {
     @get:Rule val mainDispatcherRule = MainDispatcherRule()
+
+    @Test fun `monthly card and lifetime money available for goals stay separate`() = runTest {
+        val monthly = MutableStateFlow(10_000L)
+        val lifetime = MutableStateFlow(100_000L)
+        val repository = FakeSavingsRepository()
+        repository.allocations.value = listOf(GoalAllocation("a", "goal", 20_000, allocatedAtEpochMillis = 0))
+        val viewModel = SavingsViewModel(repository, monthly, lifetimeSavingsMinor = lifetime)
+        advanceUntilIdle()
+        assertEquals(10_000L, viewModel.state.value.monthlySavingsMinor)
+        assertEquals(80_000L, viewModel.state.value.availableMinor)
+        monthly.value = -5_000L
+        advanceUntilIdle()
+        assertEquals(-5_000L, viewModel.state.value.monthlySavingsMinor)
+        assertEquals(80_000L, viewModel.state.value.availableMinor)
+    }
+
+    @Test fun `duplicate allocation taps cannot create two contributions`() = runTest {
+        val base = FakeSavingsRepository()
+        val started = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val release = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val repository = object : SavingsRepository by base {
+            override suspend fun allocate(allocation: GoalAllocation) {
+                started.complete(Unit); release.await(); base.allocate(allocation)
+            }
+        }
+        var next = 0
+        val viewModel = SavingsViewModel(repository, MutableStateFlow(100_000L), newId = { "a-${next++}" })
+        advanceUntilIdle()
+        val first = async { viewModel.allocate("goal", "100") }
+        started.await()
+        val second = async { viewModel.allocate("goal", "100") }
+        testScheduler.runCurrent()
+        release.complete(Unit)
+        first.await(); second.await()
+        assertEquals(1, base.allocations.value.size)
+    }
 
     @Test
     fun `creates goal allocates within available savings and records reversal`() = runTest {

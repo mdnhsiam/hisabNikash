@@ -36,30 +36,40 @@ import com.hisabnikash.app.ui.components.PaymentMethodDropdown
 import androidx.compose.material3.FilterChip
 import com.hisabnikash.app.core.money.MoneyFormatter
 import com.hisabnikash.app.core.time.MonthKey
+import com.hisabnikash.app.core.time.DateInput
+import com.hisabnikash.app.core.money.MoneyParser
+import com.hisabnikash.app.core.money.MoneyParseResult
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 
 @Composable
 fun RecurringScreen(
     state: RecurringState,
+    modifier: Modifier = Modifier,
     requestedReviewId: String? = null,
+    requestedReviewDueAt: Long? = null,
     onReviewRequestConsumed: () -> Unit = {},
     categories: List<Category> = emptyList(),
     notificationPermissionGranted: Boolean,
     onRequestPermission: () -> Unit,
     onCreate: suspend (RecurringDraft) -> Boolean,
-    onConfirm: (String) -> Unit,
-    onReviewConfirm: (String, RecurringEditor) -> Unit,
-    onSkip: (String) -> Unit,
-    onDisable: (String) -> Unit,
-    modifier: Modifier = Modifier,
+    onConfirm: suspend (String, Long) -> Boolean,
+    onReviewConfirm: suspend (String, Long, RecurringEditor) -> Boolean,
+    onSkip: suspend (String, Long) -> Boolean,
+    onDisable: suspend (String) -> Boolean,
 ) {
     var showEditor by remember { mutableStateOf(false) }
     var reviewItem by remember { mutableStateOf<RecurringItem?>(null) }
     var editorError by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(requestedReviewId, state.items) {
         requestedReviewId?.let { id ->
             state.items.firstOrNull { it.id == id }?.let {
-                reviewItem = it
+                if (it.isEnabled && (requestedReviewDueAt == null || it.nextDueAtEpochMillis == requestedReviewDueAt)) reviewItem = it
+                else editorError = true
                 onReviewRequestConsumed()
             }
         }
@@ -78,18 +88,23 @@ fun RecurringScreen(
             }
         }
         if (state.items.isEmpty()) Text(stringResource(R.string.no_recurring), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (state.error != null || editorError) Text(stringResource(R.string.recurring_action_failed), color = MaterialTheme.colorScheme.error)
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             state.items.forEach { item ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(item.description, style = MaterialTheme.typography.titleMedium)
                         Text(MoneyFormatter.formatMinorUnits(item.amountMinor))
+                        Text(java.time.Instant.ofEpochMilli(item.nextDueAtEpochMillis).atZone(MonthKey.DHAKA).toLocalDate().format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(androidx.compose.ui.platform.LocalConfiguration.current.locales[0])))
+                        Text(stringResource(if (!item.isEnabled) R.string.recurring_disabled else if (item.type == TransactionType.EXPENSE) R.string.expense else R.string.income), style = MaterialTheme.typography.bodySmall)
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Button(onClick = { if (item.reminderStyle == ReminderStyle.QUICK_CONFIRM) onConfirm(item.id) else reviewItem = item }) {
+                            Button(onClick = { if (item.reminderStyle == ReminderStyle.QUICK_CONFIRM) {
+                                busy = true; scope.launch { try { editorError = !onConfirm(item.id, item.nextDueAtEpochMillis) } finally { busy = false } }
+                            } else { reviewItem = item; editorError = false } }, enabled = item.isEnabled && !busy) {
                                 Text(if (item.reminderStyle == ReminderStyle.QUICK_CONFIRM) stringResource(R.string.confirm) else stringResource(R.string.open_review))
                             }
-                            TextButton(onClick = { onSkip(item.id) }) { Text(stringResource(R.string.skip)) }
-                            TextButton(onClick = { onDisable(item.id) }) { Text(stringResource(R.string.disable)) }
+                            TextButton(onClick = { busy = true; scope.launch { try { editorError = !onSkip(item.id, item.nextDueAtEpochMillis) } finally { busy = false } } }, enabled = item.isEnabled && !busy) { Text(stringResource(R.string.skip)) }
+                            TextButton(onClick = { busy = true; scope.launch { try { editorError = !onDisable(item.id) } finally { busy = false } } }, enabled = item.isEnabled && !busy) { Text(stringResource(R.string.disable)) }
                         }
                     }
                 }
@@ -107,10 +122,10 @@ fun RecurringScreen(
         var note by remember { mutableStateOf("") }
         var dueDate by remember { mutableStateOf(java.time.LocalDate.now(MonthKey.DHAKA).plusMonths(1).toString()) }
         AlertDialog(
-            onDismissRequest = { showEditor = false },
+            onDismissRequest = { if (!busy) showEditor = false },
             title = { Text(stringResource(R.string.add_recurring)) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(type == TransactionType.EXPENSE, { type = TransactionType.EXPENSE }, label = { Text(stringResource(R.string.expense)) })
                         FilterChip(type == TransactionType.INCOME, { type = TransactionType.INCOME }, label = { Text(stringResource(R.string.income)) })
@@ -122,28 +137,43 @@ fun RecurringScreen(
                     OutlinedTextField(dueDate, { dueDate = it }, label = { Text(stringResource(R.string.next_due_date)) })
                     OutlinedTextField(note, { note = it }, label = { Text(stringResource(R.string.note_optional)) })
                     Text(stringResource(R.string.frequency_monthly), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row { Checkbox(quick, { quick = it }); Text(stringResource(R.string.quick_confirm)) }
+                    Row(Modifier.toggleable(quick, role = Role.Checkbox, onValueChange = { quick = it })) { Checkbox(quick, null); Text(stringResource(R.string.quick_confirm)) }
                     if (editorError) Text(stringResource(R.string.operation_failed), color = MaterialTheme.colorScheme.error)
                 }
             },
-            confirmButton = { Button(onClick = { scope.launch { if (onCreate(RecurringDraft(type, amount, description, categoryId, paymentMethod, note, dueDate, quick))) { showEditor = false; editorError = false } else editorError = true } }) { Text(stringResource(R.string.save)) } },
-            dismissButton = { TextButton(onClick = { showEditor = false }) { Text(stringResource(R.string.cancel)) } },
+            confirmButton = { Button(onClick = { busy = true; scope.launch { try { if (onCreate(RecurringDraft(type, amount, description, categoryId, paymentMethod, note, dueDate, quick))) { showEditor = false; editorError = false } else editorError = true } finally { busy = false } } }, enabled = !busy) { Text(stringResource(R.string.save)) } },
+            dismissButton = { TextButton(onClick = { showEditor = false; editorError = false }, enabled = !busy) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
     reviewItem?.let { item ->
         var description by remember(item.id) { mutableStateOf(item.description) }
+        var amount by remember(item.id) { mutableStateOf("${item.amountMinor / 100}.${(item.amountMinor % 100).toString().padStart(2, '0')}") }
+        var categoryId by remember(item.id) { mutableStateOf(item.categoryId) }
+        var paymentMethod by remember(item.id) { mutableStateOf(item.paymentMethod) }
+        var note by remember(item.id) { mutableStateOf(item.note.orEmpty()) }
+        val parsed = MoneyParser.parseToMinorUnits(amount)
+        val matchingCategories = categories.filter { it.type == (if (item.type == TransactionType.EXPENSE) CategoryType.EXPENSE else CategoryType.INCOME) && (it.isActive || it.id == categoryId) }
         AlertDialog(
-            onDismissRequest = { reviewItem = null },
+            onDismissRequest = { if (!busy) reviewItem = null },
             title = { Text(stringResource(R.string.open_review)) },
-            text = { OutlinedTextField(description, { description = it }, label = { Text(stringResource(R.string.description)) }) },
+            text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(description, { description = it }, label = { Text(stringResource(R.string.description)) })
+                OutlinedTextField(amount, { amount = it }, label = { Text(stringResource(R.string.amount_bdt)) })
+                CategoryDropdown(matchingCategories, categoryId, { categoryId = it }, null)
+                PaymentMethodDropdown(paymentMethod, { paymentMethod = it })
+                OutlinedTextField(note, { note = it }, label = { Text(stringResource(R.string.note_optional)) })
+                if (editorError) Text(stringResource(R.string.recurring_action_failed), color = MaterialTheme.colorScheme.error)
+            } },
             confirmButton = {
                 Button(onClick = {
-                    onReviewConfirm(item.id, RecurringEditor.from(item).copy(description = description))
-                    reviewItem = null
-                }) { Text(stringResource(R.string.confirm)) }
+                    busy = true
+                    val editor = RecurringEditor.from(item).copy(description = description.trim(), amountMinor = (parsed as MoneyParseResult.Success).minorUnits,
+                        categoryId = categoryId, paymentMethod = paymentMethod, note = note.trim().ifEmpty { null })
+                    scope.launch { try { if (onReviewConfirm(item.id, item.nextDueAtEpochMillis, editor)) { reviewItem = null; editorError = false } else editorError = true } finally { busy = false } }
+                }, enabled = !busy && description.isNotBlank() && parsed is MoneyParseResult.Success && matchingCategories.any { it.id == categoryId }) { Text(stringResource(R.string.confirm)) }
             },
-            dismissButton = { TextButton(onClick = { reviewItem = null }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { TextButton(onClick = { reviewItem = null; editorError = false }, enabled = !busy) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }

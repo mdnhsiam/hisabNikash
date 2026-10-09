@@ -17,7 +17,7 @@ import android.app.Activity
 import android.app.PendingIntent
 import android.content.Intent
 import com.hisabnikash.app.backup.crypto.BackupPasswordCache
-import com.hisabnikash.app.backup.drive.DriveAuthorizationClient
+import com.hisabnikash.app.backup.drive.DriveAuthorizationGateway
 import com.hisabnikash.app.backup.drive.DriveAuthorizationResult
 import com.hisabnikash.app.backup.drive.DriveBackupStore
 import com.hisabnikash.app.backup.RestoreRecoveryStore
@@ -27,14 +27,16 @@ import com.hisabnikash.app.data.repository.CategoryRepository
 import com.hisabnikash.app.core.model.Category
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 
 class SettingsViewModel(
     private val preferences: UserPreferences,
     private val dataDeletion: DataDeletionUseCase,
     private val localBackupStore: LocalBackupStore,
-    private val driveAuthorization: DriveAuthorizationClient,
+    private val driveAuthorization: DriveAuthorizationGateway,
     private val driveBackupStore: DriveBackupStore,
-    private val passwordCache: BackupPasswordCache,
+    @Suppress("UNUSED_PARAMETER") passwordCache: BackupPasswordCache,
     private val recoveryStore: RestoreRecoveryStore,
     private val categoryRepository: CategoryRepository,
 ) : ViewModel() {
@@ -47,128 +49,150 @@ class SettingsViewModel(
     val backupMessage = mutableBackupMessage.asStateFlow()
     private val mutableDriveResolution = MutableStateFlow<PendingIntent?>(null)
     val driveResolution = mutableDriveResolution.asStateFlow()
-    private var driveAccessToken: String? = null
+    private var pendingAuthorizationVersion: Long? = null
     val categories: StateFlow<List<Category>> = categoryRepository.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    private fun launchOperation(failureMessage: Int = R.string.operation_failed, operation: suspend () -> Unit): Job = viewModelScope.launch {
+        try { operation() }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { mutableBackupMessage.value = failureMessage }
+    }
+
+    private fun launchPasswordOperation(password: CharArray, failureMessage: Int, operation: suspend () -> Unit) {
+        launchOperation(failureMessage) {
+            try { operation() } finally { password.fill('\u0000') }
+        }.invokeOnCompletion {
+            // Covers cancellation before a cleared ViewModel's launch enters its body.
+            password.fill('\u0000')
+        }
+    }
+
     fun setLanguage(language: AppLanguage, onApplied: () -> Unit) {
-        viewModelScope.launch {
+        launchOperation {
             preferences.setLanguage(language)
             onApplied()
         }
     }
 
     fun dismissGuestWarning() {
-        viewModelScope.launch { preferences.dismissGuestWarning() }
+        launchOperation { preferences.dismissGuestWarning() }
     }
 
     fun deleteAllLocalData(onDeleted: () -> Unit = {}) {
-        viewModelScope.launch {
+        launchOperation {
             if (dataDeletion.deleteAllLocalData(confirmed = true)) onDeleted()
         }
     }
 
     fun chooseBackupLocation(uri: Uri) {
-        viewModelScope.launch {
-            mutableBackupMessage.value = runCatching { localBackupStore.chooseBackupLocation(uri) }
-                .fold({ R.string.backup_location_saved }, { R.string.backup_location_error })
+        launchOperation(R.string.backup_location_error) {
+            localBackupStore.chooseBackupLocation(uri)
+            mutableBackupMessage.value = R.string.backup_location_saved
         }
     }
 
     fun backUpNow(password: CharArray) {
-        viewModelScope.launch {
-            mutableBackupMessage.value = runCatching { withContext(Dispatchers.IO) { localBackupStore.backUpNow(password) } }
-                .fold({ R.string.backup_success }, { R.string.backup_failed })
-            password.fill('\u0000')
+        launchPasswordOperation(password, R.string.backup_failed) {
+            withContext(Dispatchers.IO) { localBackupStore.backUpNow(password) }
+            mutableBackupMessage.value = R.string.backup_success
         }
     }
 
     fun restore(uri: Uri, password: CharArray) {
-        viewModelScope.launch {
-            mutableBackupMessage.value = runCatching { withContext(Dispatchers.IO) { localBackupStore.restoreFromDocument(uri, password) } }
-                .fold(
-                    { result -> if (result is RestoreResult.Success) R.string.restore_success else R.string.restore_failed },
-                    { R.string.restore_failed },
-                )
-            password.fill('\u0000')
+        launchPasswordOperation(password, R.string.restore_failed) {
+            val result = withContext(Dispatchers.IO) { localBackupStore.restoreFromDocument(uri, password) }
+            mutableBackupMessage.value = if (result is RestoreResult.Success) R.string.restore_success else R.string.restore_failed
         }
     }
 
     fun disableLocalBackup() {
-        viewModelScope.launch {
+        launchOperation {
             localBackupStore.disable()
             mutableBackupMessage.value = R.string.local_backup_disabled
         }
     }
 
     fun authorizeDrive(activity: Activity) {
-        viewModelScope.launch { handleDriveAuthorization(driveAuthorization.authorizeDriveAppData(activity)) }
+        val version = driveBackupStore.authorizationVersion
+        launchOperation(R.string.drive_auth_failed) { handleDriveAuthorization(driveAuthorization.authorizeDriveAppData(activity), version) }
     }
 
     fun completeDriveAuthorization(data: Intent?) {
-        if (data == null) {
+        val version = pendingAuthorizationVersion
+        clearDriveResolution()
+        if (data == null || version == null) {
             mutableBackupMessage.value = R.string.drive_auth_failed
             return
         }
-        handleDriveAuthorization(driveAuthorization.completeResolution(data))
+        val result = runCatching { driveAuthorization.completeResolution(data) }.getOrElse(DriveAuthorizationResult::Failed)
+        handleDriveAuthorization(result, version)
     }
 
-    private fun handleDriveAuthorization(result: DriveAuthorizationResult) {
+    private fun clearDriveResolution() {
+        pendingAuthorizationVersion = null
+        mutableDriveResolution.value = null
+    }
+
+    private fun handleDriveAuthorization(result: DriveAuthorizationResult, version: Long) {
+        if (version != driveBackupStore.authorizationVersion) {
+            clearDriveResolution()
+            mutableBackupMessage.value = R.string.drive_disconnected
+            return
+        }
         when (result) {
             is DriveAuthorizationResult.Authorized -> {
-                driveAccessToken = result.accessToken
-                mutableDriveResolution.value = null
-                viewModelScope.launch { preferences.setDriveBackupEnabled(true) }
-                mutableBackupMessage.value = R.string.drive_connected
+                clearDriveResolution()
+                launchOperation(R.string.drive_auth_failed) {
+                    mutableBackupMessage.value = if (driveBackupStore.connect(version)) R.string.drive_connected else R.string.drive_disconnected
+                }
             }
-            is DriveAuthorizationResult.ResolutionRequired -> mutableDriveResolution.value = result.pendingIntent
-            is DriveAuthorizationResult.Failed -> mutableBackupMessage.value = R.string.drive_auth_failed
+            is DriveAuthorizationResult.ResolutionRequired -> {
+                pendingAuthorizationVersion = version
+                mutableDriveResolution.value = result.pendingIntent
+            }
+            is DriveAuthorizationResult.Failed -> {
+                clearDriveResolution()
+                mutableBackupMessage.value = R.string.drive_auth_failed
+            }
         }
     }
 
     fun driveBackUpNow(password: CharArray) {
-        viewModelScope.launch {
-            val token = driveAccessToken ?: driveAuthorization.currentAccessToken()
-            mutableBackupMessage.value = if (token == null) {
-                R.string.drive_reconnect
+        launchPasswordOperation(password, R.string.drive_backup_failed) {
+            // Silent authorization refreshes the token for every manual operation.
+            // Any user-consent resolution is handled by the explicit Connect flow.
+            val token = driveAuthorization.currentAccessToken()
+            if (token == null) {
+                mutableBackupMessage.value = R.string.drive_reconnect
             } else {
-                runCatching {
-                    withContext(Dispatchers.IO) { driveBackupStore.backUpNow(token, password) }
-                    passwordCache.save(password)
-                }.fold({ R.string.drive_backup_success }, { R.string.drive_backup_failed })
+                withContext(Dispatchers.IO) { driveBackupStore.backUpNow(token, password) }
+                mutableBackupMessage.value = R.string.drive_backup_success
             }
-            password.fill('\u0000')
         }
     }
 
     fun driveRestoreLatest(password: CharArray) {
-        viewModelScope.launch {
-            val token = driveAccessToken ?: driveAuthorization.currentAccessToken()
-            mutableBackupMessage.value = if (token == null) R.string.drive_reconnect else runCatching {
-                withContext(Dispatchers.IO) { driveBackupStore.restoreLatest(token, password) }
-            }.fold(
-                { result -> if (result is RestoreResult.Success) R.string.restore_success else R.string.restore_failed },
-                { R.string.restore_failed },
-            )
-            password.fill('\u0000')
+        launchPasswordOperation(password, R.string.restore_failed) {
+            val token = driveAuthorization.currentAccessToken()
+            if (token == null) mutableBackupMessage.value = R.string.drive_reconnect else {
+                val result = withContext(Dispatchers.IO) { driveBackupStore.restoreLatest(token, password) }
+                mutableBackupMessage.value = if (result is RestoreResult.Success) R.string.restore_success else R.string.restore_failed
+            }
         }
     }
 
     fun disconnectDrive() {
-        viewModelScope.launch {
-            runCatching { driveAuthorization.revoke() }
-            driveAccessToken = null
-            preferences.setDriveBackupEnabled(false)
+        clearDriveResolution()
+        launchOperation {
+            driveBackupStore.disconnect { runCatching { driveAuthorization.revoke() }; Unit }
             mutableBackupMessage.value = R.string.drive_disconnected
         }
     }
 
     fun undoLastRestore(password: CharArray) {
-        viewModelScope.launch {
-            mutableBackupMessage.value = runCatching { recoveryStore.restore(password) }.fold(
-                { result -> if (result is RestoreResult.Success) R.string.restore_undo_success else R.string.restore_failed },
-                { R.string.restore_failed },
-            )
-            password.fill('\u0000')
+        launchPasswordOperation(password, R.string.restore_failed) {
+            val result = withContext(Dispatchers.IO) { recoveryStore.restore(password) }
+            mutableBackupMessage.value = if (result is RestoreResult.Success) R.string.restore_undo_success else R.string.restore_failed
         }
     }
 
@@ -176,10 +200,10 @@ class SettingsViewModel(
 
     fun renameCategory(category: Category, name: String) {
         if (name.isBlank() || category.isSystem) return
-        viewModelScope.launch { categoryRepository.update(category.copy(nameEn = name.trim(), nameBn = name.trim())) }
+        launchOperation { categoryRepository.update(category.copy(nameEn = name.trim(), nameBn = name.trim())) }
     }
 
     fun archiveCategory(category: Category) {
-        if (!category.isSystem) viewModelScope.launch { categoryRepository.archive(category.id) }
+        if (!category.isSystem) launchOperation { categoryRepository.archive(category.id) }
     }
 }

@@ -57,6 +57,7 @@ import com.hisabnikash.app.feature.transactions.QuickEntryViewModel
 import com.hisabnikash.app.feature.transactions.SubmitResult
 import com.hisabnikash.app.feature.transactions.TransactionListScreen
 import com.hisabnikash.app.feature.transactions.TransactionListViewModel
+import com.hisabnikash.app.feature.transactions.DuplicateWarningDialog
 import com.hisabnikash.app.feature.dashboard.DashboardScreen
 import com.hisabnikash.app.feature.dashboard.DashboardViewModel
 import com.hisabnikash.app.feature.reports.ReportsScreen
@@ -74,13 +75,22 @@ import com.hisabnikash.app.core.time.MonthKey
 import com.hisabnikash.app.domain.FinanceCalculator
 import java.time.Instant
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.hisabnikash.app.core.time.CurrentMonthClock
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @Composable
 fun HisabNavHost(
     container: AppContainer,
     requestedRecurringId: String? = null,
+    requestedRecurringDueAt: Long? = null,
     onRecurringRequestConsumed: () -> Unit = {},
 ) {
     val navController = rememberNavController()
@@ -88,8 +98,17 @@ fun HisabNavHost(
     val currentPath = backStackEntry?.destination?.route ?: Route.Dashboard.path
     var showQuickEntry by remember { mutableStateOf(false) }
     var showDuplicateWarning by remember { mutableStateOf(false) }
+    var duplicateMatch by remember { mutableStateOf<com.hisabnikash.app.core.model.Transaction?>(null) }
     val scope = rememberCoroutineScope()
-    val currentMonth = remember { MonthKey.fromInstant(Instant.now()) }
+    val monthClock = remember { CurrentMonthClock() }
+    val currentMonth by monthClock.month.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, monthClock) {
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) monthClock.refresh() }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(monthClock) { while (true) { monthClock.refresh(); delay(60_000) } }
     val context = LocalContext.current
     val addTransactionLabel = stringResource(R.string.add_transaction)
     var notificationPermissionGranted by remember {
@@ -125,8 +144,10 @@ fun HisabNavHost(
                 initializer {
                     DashboardViewModel(
                         transactionRepository = container.transactionRepository,
-                        budgets = container.budgetRepository.observeMonth(currentMonth),
+                        budgets = monthClock.month.flatMapLatest(container.budgetRepository::observeMonth),
                         allocations = container.savingsRepository.observeAllocations(),
+                        months = monthClock.month,
+                        categories = container.categoryRepository.observeAll(),
                     )
                 }
             }
@@ -145,6 +166,7 @@ fun HisabNavHost(
                         repository = container.budgetRepository,
                         month = currentMonth,
                         categories = container.categoryRepository.observeActive(CategoryType.EXPENSE),
+                        months = monthClock.month,
                     )
                 }
             }
@@ -156,7 +178,10 @@ fun HisabNavHost(
                 initializer {
                     SavingsViewModel(
                         repository = container.savingsRepository,
-                        monthlySavingsMinor = container.transactionRepository.observeAll().map { transactions ->
+                        monthlySavingsMinor = combine(container.transactionRepository.observeAll(), monthClock.month) { transactions, month ->
+                            FinanceCalculator.dashboard(transactions, emptyList(), emptyList(), month).netSavingsMinor
+                        },
+                        lifetimeSavingsMinor = container.transactionRepository.observeAll().map { transactions ->
                             transactions.sumOf { transaction ->
                                 if (transaction.type == com.hisabnikash.app.core.model.TransactionType.INCOME) transaction.amountMinor else -transaction.amountMinor
                             }
@@ -224,11 +249,7 @@ fun HisabNavHost(
                             }
                         },
                         icon = {
-                            Box(
-                                Modifier
-                                    .size(6.dp)
-                                    .background(MaterialTheme.colorScheme.primary),
-                            )
+                            NavigationGlyph(route)
                         },
                         label = { Text(stringResource(route.labelRes)) },
                     )
@@ -321,6 +342,7 @@ fun HisabNavHost(
                         RecurringScreen(
                             state = recurringState,
                             requestedReviewId = requestedRecurringId,
+                            requestedReviewDueAt = requestedRecurringDueAt,
                             onReviewRequestConsumed = onRecurringRequestConsumed,
                             categories = settingsCategories,
                             notificationPermissionGranted = notificationPermissionGranted,
@@ -328,10 +350,10 @@ fun HisabNavHost(
                                 if (Build.VERSION.SDK_INT >= 33) notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             },
                             onCreate = recurringViewModel::create,
-                            onConfirm = { id -> scope.launch { recurringViewModel.quickConfirm(id) } },
-                            onReviewConfirm = { id, editor -> scope.launch { recurringViewModel.confirmWithEdits(id, editor) } },
-                            onSkip = { id -> scope.launch { recurringViewModel.skip(id) } },
-                            onDisable = { id -> scope.launch { recurringViewModel.disable(id) } },
+                            onConfirm = recurringViewModel::quickConfirm,
+                            onReviewConfirm = { id, due, editor -> recurringViewModel.confirmWithEdits(id, editor, due) },
+                            onSkip = recurringViewModel::skip,
+                            onDisable = recurringViewModel::disable,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     },
@@ -352,11 +374,12 @@ fun HisabNavHost(
                 onCustomCategoryChange = quickEntryViewModel::setCustomCategory,
                 onPaymentMethodChange = quickEntryViewModel::setPaymentMethod,
                 onNoteChange = quickEntryViewModel::setNote,
+                onDateChange = quickEntryViewModel::setOccurredAt,
                 onSubmit = {
                     scope.launch {
-                        when (quickEntryViewModel.submit()) {
+                        when (val result = quickEntryViewModel.submit()) {
                             is SubmitResult.Saved -> showQuickEntry = false
-                            is SubmitResult.PossibleDuplicate -> showDuplicateWarning = true
+                            is SubmitResult.PossibleDuplicate -> { duplicateMatch = result.existing; showDuplicateWarning = true }
                             else -> Unit
                         }
                     }
@@ -365,24 +388,18 @@ fun HisabNavHost(
         }
     }
 
-    if (showDuplicateWarning) {
-        AlertDialog(
-            onDismissRequest = { showDuplicateWarning = false },
-            title = { Text(stringResource(R.string.possible_duplicate)) },
-            text = { Text(stringResource(R.string.possible_duplicate_message)) },
-            confirmButton = {
-                Button(onClick = {
+    if (showDuplicateWarning && duplicateMatch != null) {
+        DuplicateWarningDialog(
+            existing = duplicateMatch!!,
+            onSaveAnyway = {
                     scope.launch {
                         if (quickEntryViewModel.submit(intentionalDuplicate = true) is SubmitResult.Saved) {
                             showDuplicateWarning = false
                             showQuickEntry = false
                         }
                     }
-                }) { Text(stringResource(R.string.save_anyway)) }
-            },
-            dismissButton = {
-                Button(onClick = { showDuplicateWarning = false }) { Text(stringResource(R.string.cancel)) }
-            },
+                },
+            onCancel = { showDuplicateWarning = false },
         )
     }
 }

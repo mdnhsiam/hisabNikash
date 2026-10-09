@@ -48,8 +48,9 @@ class SnapshotImporter(
         }
     }
 
-    suspend fun apply(validated: ValidatedRestore): RestoreResult = try {
+    suspend fun apply(validated: ValidatedRestore, beforeReplacement: suspend () -> Unit = {}): RestoreResult = try {
         database.withTransaction {
+            beforeReplacement()
             val snapshot = validated.snapshot
             database.snapshotDao().replaceAll(
                 categories = snapshot.categories,

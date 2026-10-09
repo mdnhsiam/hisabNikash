@@ -37,6 +37,7 @@ fun BudgetScreen(
     var amount by remember { mutableStateOf("") }
     var categoryId by remember { mutableStateOf<String?>(null) }
     var errorRes by remember { mutableStateOf<Int?>(null) }
+    var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val useBangla = LocalConfiguration.current.locales[0].language == "bn"
     Card(modifier = modifier.fillMaxWidth()) {
@@ -45,14 +46,14 @@ fun BudgetScreen(
             if (!state.isConfigured) Text(stringResource(R.string.budget_setup_prompt), color = MaterialTheme.colorScheme.onSurfaceVariant)
             state.totalBudget?.let { budget ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(stringResource(R.string.total_budget))
+                    Text(stringResource(R.string.total_budget), Modifier.weight(1f))
                     Text(MoneyFormatter.formatMinorUnits(budget.amountMinor))
                     TextButton(onClick = { onDelete(budget.id) }) { Text(stringResource(R.string.delete)) }
                 }
             }
             state.categoryBudgets.forEach { budget ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(state.categories.firstOrNull { it.id == budget.categoryId }?.localizedName(useBangla) ?: budget.categoryId.orEmpty())
+                    Text(state.categories.firstOrNull { it.id == budget.categoryId }?.localizedName(useBangla) ?: budget.categoryId.orEmpty(), Modifier.weight(1f), maxLines = 2)
                     Text(MoneyFormatter.formatMinorUnits(budget.amountMinor))
                     TextButton(onClick = { onDelete(budget.id) }) { Text(stringResource(R.string.delete)) }
                 }
@@ -62,6 +63,7 @@ fun BudgetScreen(
                 onValueChange = { amount = it },
                 label = { Text(stringResource(R.string.budget_amount)) },
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !busy,
             )
             CategoryDropdown(
                 categories = state.categories,
@@ -71,12 +73,13 @@ fun BudgetScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { scope.launch { if (onSave(amount, null) is BudgetSaveResult.Saved) { amount = ""; errorRes = null } else errorRes = R.string.error_valid_amount } }) { Text(stringResource(R.string.save_total_budget)) }
-                Button(onClick = { scope.launch { if (onSave(amount, categoryId) is BudgetSaveResult.Saved) { amount = ""; errorRes = null } else errorRes = R.string.error_valid_amount } }, enabled = categoryId != null) {
+                Button(onClick = { busy = true; scope.launch { try { if (onSave(amount, null) is BudgetSaveResult.Saved) { amount = ""; errorRes = null } else errorRes = R.string.operation_failed } finally { busy = false } } }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.save_total_budget)) }
+                Button(onClick = { busy = true; scope.launch { try { if (onSave(amount, categoryId) is BudgetSaveResult.Saved) { amount = ""; errorRes = null } else errorRes = R.string.operation_failed } finally { busy = false } } }, enabled = !busy && categoryId != null, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.save_category_budget))
                 }
             }
             errorRes?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
+            if (state.error != null) Text(stringResource(R.string.operation_failed), color = MaterialTheme.colorScheme.error)
         }
     }
 }

@@ -36,7 +36,7 @@ class QuickEntryViewModel(
 
     init {
         viewModelScope.launch {
-            val method = paymentMethodPreference.get()
+            val method = runCatching { paymentMethodPreference.get() }.getOrDefault(PaymentMethod.CASH)
             mutableState.update { it.copy(paymentMethod = method) }
         }
         observeCategories(TransactionType.EXPENSE)
@@ -103,15 +103,18 @@ class QuickEntryViewModel(
             createdAtEpochMillis = timestamp,
         )
 
-        if (!intentionalDuplicate) {
-            transactionRepository.findPossibleDuplicate(transaction)?.let { return SubmitResult.PossibleDuplicate(it) }
-        }
-
         mutableState.update { it.copy(isSaving = true, saveError = null) }
         return try {
+            if (!intentionalDuplicate) {
+                transactionRepository.findPossibleDuplicate(transaction)?.let {
+                    mutableState.update { state -> state.copy(isSaving = false) }
+                    return SubmitResult.PossibleDuplicate(it)
+                }
+            }
             if (customCategory != null) transactionRepository.addWithCustomCategory(transaction, customCategory)
             else transactionRepository.add(transaction)
-            paymentMethodPreference.set(current.paymentMethod)
+            // Remembering a convenience default must not change the committed ledger's save result.
+            runCatching { paymentMethodPreference.set(current.paymentMethod) }
             mutableState.update {
                 it.copy(
                     amountInput = "",

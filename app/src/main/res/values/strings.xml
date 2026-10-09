@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Hisab</string>
+    <string name="app_name">HisabNikash</string>
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_transactions">Transactions</string>
     <string name="nav_reports">Reports</string>
@@ -106,7 +106,7 @@
     <string name="backup_password">Backup password</string>
     <string name="restore_password">Restore password</string>
     <string name="password">Password</string>
-    <string name="password_warning">Use at least 8 characters. This no-server app cannot recover a forgotten backup password.</string>
+    <string name="password_warning">Use at least 8 characters; a long, unique passphrase is safer. This no-server app cannot recover a forgotten backup password.</string>
     <string name="backup_location_saved">Backup folder connected.</string>
     <string name="backup_location_error">Could not access that folder.</string>
     <string name="backup_success">Encrypted backup saved.</string>
@@ -139,4 +139,14 @@
     <string name="frequency_monthly">Repeats monthly</string>
     <string name="transaction_date">Date (YYYY-MM-DD)</string>
     <string name="restore_replacement_warning">Restoring replaces current local data. An encrypted undo copy will be kept on this device.</string>
+    <string name="recurring_disabled">Disabled</string>
+    <string name="daily_totals">Daily totals</string>
+    <string name="daily_income_expense">Income %1$s • Expense %2$s</string>
+    <string name="recurring_action_failed">This bill may have changed or could not be saved. Close this form and review the latest item.</string>
+    <string name="manage_backup_copies">Manage or delete backup copies</string>
+    <string name="external_backup_deletion_notice">Deleting local app data or disconnecting Drive does not delete existing backup copies.</string>
+    <string name="disable_before_deleting_backup">First disable phone-folder backup or disconnect Google Drive here to prevent a new automatic copy.</string>
+    <string name="delete_folder_backup_help">Phone folder: open your chosen backup folder in the Files app. Delete only the HisabNikash backup files you no longer need, including previous or temporary copies if present.</string>
+    <string name="delete_drive_backup_help">Google Drive: on a computer, open Drive Settings → Manage apps. Find HisabNikash and use its hidden app-data deletion option.</string>
+    <string name="backup_delete_irreversible">Deleting your last backup can permanently remove your recovery option. Check that another valid copy exists before deleting.</string>
 </resources>

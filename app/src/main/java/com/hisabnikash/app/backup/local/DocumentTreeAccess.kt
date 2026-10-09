@@ -31,6 +31,13 @@ class DocumentTreeAccess(context: Context) : LocalDocumentAccess {
 
     override fun writeAtomically(treeUri: Uri, fileName: String, bytes: ByteArray) {
         try {
+            val oldName = ".$fileName.previous"
+            val interruptedPrevious = findChild(treeUri, oldName)
+            if (findChild(treeUri, fileName) == null && interruptedPrevious != null) {
+                // Preserve the only complete copy after interrupted promotion/rollback.
+                DocumentsContract.renameDocument(resolver, interruptedPrevious, fileName)
+                    ?: throw BackupLocationUnavailableException()
+            }
             val tempName = ".$fileName.tmp"
             findChild(treeUri, tempName)?.let { DocumentsContract.deleteDocument(resolver, it) }
             val parent = DocumentsContract.buildDocumentUriUsingTree(treeUri, DocumentsContract.getTreeDocumentId(treeUri))
@@ -42,13 +49,14 @@ class DocumentTreeAccess(context: Context) : LocalDocumentAccess {
             } ?: throw BackupLocationUnavailableException()
 
             val old = findChild(treeUri, fileName)
-            val oldName = ".$fileName.previous"
-            findChild(treeUri, oldName)?.let { DocumentsContract.deleteDocument(resolver, it) }
-            val parkedOld = old?.let { DocumentsContract.renameDocument(resolver, it, oldName) }
+            if (old != null) findChild(treeUri, oldName)?.let { DocumentsContract.deleteDocument(resolver, it) }
+            val parkedOld = old?.let {
+                DocumentsContract.renameDocument(resolver, it, oldName) ?: throw BackupLocationUnavailableException()
+            }
             try {
                 DocumentsContract.renameDocument(resolver, temp, fileName)
                     ?: throw BackupLocationUnavailableException()
-                parkedOld?.let { DocumentsContract.deleteDocument(resolver, it) }
+                parkedOld?.let { runCatching { DocumentsContract.deleteDocument(resolver, it) } }
             } catch (error: Throwable) {
                 parkedOld?.let { runCatching { DocumentsContract.renameDocument(resolver, it, fileName) } }
                 throw error

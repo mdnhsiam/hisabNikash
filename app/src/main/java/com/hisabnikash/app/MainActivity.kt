@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 
 class MainActivity : ComponentActivity() {
     private val requestedRecurringId = mutableStateOf<String?>(null)
+    private val requestedRecurringDueAt = mutableStateOf<Long?>(null)
     override fun attachBaseContext(newBase: Context) {
         val language = runBlocking { UserPreferences.create(newBase).state.first().language }
         super.attachBaseContext(LanguageController.localizedContext(newBase, language))
@@ -24,12 +25,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestedRecurringId.value = intent.getStringExtra(com.hisabnikash.app.feature.recurring.NotificationFactory.EXTRA_RECURRING_ID)
+        requestedRecurringDueAt.value = intent.getLongExtra(com.hisabnikash.app.feature.recurring.NotificationFactory.EXTRA_DUE_AT, Long.MIN_VALUE)
         enableEdgeToEdge()
         setContent {
             HisabTheme {
                 HisabNavHost(
                     container = (application as HisabApplication).container,
                     requestedRecurringId = requestedRecurringId.value,
+                    requestedRecurringDueAt = requestedRecurringDueAt.value,
                     onRecurringRequestConsumed = { requestedRecurringId.value = null },
                 )
             }
@@ -40,5 +43,6 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         requestedRecurringId.value = intent.getStringExtra(com.hisabnikash.app.feature.recurring.NotificationFactory.EXTRA_RECURRING_ID)
+        requestedRecurringDueAt.value = intent.getLongExtra(com.hisabnikash.app.feature.recurring.NotificationFactory.EXTRA_DUE_AT, Long.MIN_VALUE)
     }
 }

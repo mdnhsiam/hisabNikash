@@ -22,6 +22,7 @@ import com.hisabnikash.app.ui.components.BudgetProgress
 import com.hisabnikash.app.ui.components.SummaryCard
 import com.hisabnikash.app.ui.components.TransactionRow
 import com.hisabnikash.app.core.time.localizedLabel
+import com.hisabnikash.app.ui.components.localizedName
 
 @Composable
 fun DashboardScreen(state: DashboardState, modifier: Modifier = Modifier) {
@@ -42,7 +43,11 @@ fun DashboardScreen(state: DashboardState, modifier: Modifier = Modifier) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.monthly_budget), style = MaterialTheme.typography.titleMedium)
                 summary.budget?.let { BudgetProgress(it) }
-                    ?: Text(stringResource(R.string.budget_setup_prompt), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                summary.categoryBudgets.forEach { (id, progress) ->
+                    Text(state.categories[id]?.localizedName(locale.language == "bn") ?: stringResource(R.string.uncategorized))
+                    BudgetProgress(progress)
+                }
+                if (summary.budget == null && summary.categoryBudgets.isEmpty()) Text(stringResource(R.string.budget_setup_prompt), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Text(stringResource(R.string.recent_transactions), style = MaterialTheme.typography.titleMedium)

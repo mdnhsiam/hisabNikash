@@ -11,7 +11,7 @@ interface RecurringRepository : ClearableRepository {
     suspend fun upsert(item: RecurringItem)
     suspend fun delete(id: String)
     suspend fun confirmOccurrence(id: String, expectedDueAtEpochMillis: Long, edits: RecurringEditor? = null): Transaction
-    suspend fun skipOccurrence(id: String)
+    suspend fun skipOccurrence(id: String, expectedDueAtEpochMillis: Long)
     suspend fun disable(id: String)
     override suspend fun clearAll() = Unit
 }

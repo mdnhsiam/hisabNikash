@@ -13,18 +13,21 @@ class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val id = intent.getStringExtra(NotificationFactory.EXTRA_RECURRING_ID) ?: return
         val expectedDueAt = intent.getLongExtra(NotificationFactory.EXTRA_DUE_AT, Long.MIN_VALUE)
+        if (intent.action !in setOf(ACTION_CONFIRM, ACTION_SKIP, ACTION_DISABLE)) return
         val pending = goAsync()
         val container = (context.applicationContext as HisabApplication).container
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 when (intent.action) {
                     ACTION_CONFIRM -> container.recurringRepository.confirmOccurrence(id, expectedDueAt)
-                    ACTION_SKIP -> container.recurringRepository.skipOccurrence(id)
+                    ACTION_SKIP -> container.recurringRepository.skipOccurrence(id, expectedDueAt)
                     ACTION_DISABLE -> container.recurringRepository.disable(id)
                 }
                 val updated = container.recurringRepository.find(id)
                 if (updated?.isEnabled == true) container.recurringScheduler.schedule(updated) else container.recurringScheduler.cancel(id)
-                androidx.core.app.NotificationManagerCompat.from(context).cancel(id.hashCode())
+                androidx.core.app.NotificationManagerCompat.from(context).cancel(id, 0)
+            } catch (_: Exception) {
+                // Stale actions/storage failures leave the ledger unchanged and can be reviewed in-app.
             } finally {
                 pending.finish()
             }
@@ -46,6 +49,8 @@ class RebootReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 container.recurringRepository.observeAll().first().forEach(container.recurringScheduler::schedule)
+            } catch (_: Exception) {
+                // WorkManager also persists reminders; a failed boot reschedule must not crash the process.
             } finally {
                 pending.finish()
             }

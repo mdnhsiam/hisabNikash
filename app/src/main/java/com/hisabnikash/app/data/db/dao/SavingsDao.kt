@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Upsert
 import com.hisabnikash.app.data.db.entity.GoalAllocationEntity
 import com.hisabnikash.app.data.db.entity.SavingsGoalEntity
 import kotlinx.coroutines.flow.Flow
@@ -28,7 +29,7 @@ interface SavingsDao {
     @Query("SELECT * FROM savings_goals WHERE id = :id")
     suspend fun findGoal(id: String): SavingsGoalEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertGoal(goal: SavingsGoalEntity)
 
     @Insert

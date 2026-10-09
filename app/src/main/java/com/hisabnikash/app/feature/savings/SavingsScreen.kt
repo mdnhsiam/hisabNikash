@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import com.hisabnikash.app.R
 import com.hisabnikash.app.core.model.SavingsGoal
 import com.hisabnikash.app.core.money.MoneyFormatter
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun SavingsScreen(
@@ -38,6 +40,7 @@ fun SavingsScreen(
     var showGoalEditor by remember { mutableStateOf(false) }
     var allocatingGoal by remember { mutableStateOf<SavingsGoal?>(null) }
     var errorRes by remember { mutableStateOf<Int?>(null) }
+    var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Card(Modifier.fillMaxWidth()) {
@@ -65,9 +68,9 @@ fun SavingsScreen(
                     goal.targetMinor?.let { target ->
                         LinearProgressIndicator(progress = { (progress.toFloat() / target).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                     }
-                    TextButton(onClick = { allocatingGoal = goal }) { Text(stringResource(R.string.allocate_savings)) }
+                    TextButton(onClick = { allocatingGoal = goal; errorRes = null }, enabled = !busy) { Text(stringResource(R.string.allocate_savings)) }
                     state.allocations.lastOrNull { it.goalId == goal.id && it.amountMinor > 0 && state.allocations.none { reversal -> reversal.reversesAllocationId == it.id } }?.let { allocation ->
-                        TextButton(onClick = { scope.launch { if (onReverse(allocation.id) !is SavingsActionResult.Saved) errorRes = R.string.operation_failed } }) { Text(stringResource(R.string.reverse_last_allocation)) }
+                        TextButton(onClick = { busy = true; scope.launch { try { if (onReverse(allocation.id) !is SavingsActionResult.Saved) errorRes = R.string.operation_failed else errorRes = null } finally { busy = false } } }, enabled = !busy) { Text(stringResource(R.string.reverse_last_allocation)) }
                     }
                 }
             }
@@ -79,27 +82,28 @@ fun SavingsScreen(
         var name by remember { mutableStateOf("") }
         var target by remember { mutableStateOf("") }
         AlertDialog(
-            onDismissRequest = { showGoalEditor = false },
+            onDismissRequest = { if (!busy) showGoalEditor = false },
             title = { Text(stringResource(R.string.add_goal)) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.goal_name)) })
                     OutlinedTextField(target, { target = it }, label = { Text(stringResource(R.string.target_optional)) })
+                    errorRes?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
                 }
             },
-            confirmButton = { Button(onClick = { scope.launch { if (onCreateGoal(name, target) is SavingsActionResult.Saved) { showGoalEditor = false; errorRes = null } else errorRes = R.string.operation_failed } }, enabled = name.isNotBlank()) { Text(stringResource(R.string.save)) } },
-            dismissButton = { TextButton(onClick = { showGoalEditor = false }) { Text(stringResource(R.string.cancel)) } },
+            confirmButton = { Button(onClick = { busy = true; scope.launch { try { if (onCreateGoal(name, target) is SavingsActionResult.Saved) { showGoalEditor = false; errorRes = null } else errorRes = R.string.operation_failed } finally { busy = false } } }, enabled = !busy && name.isNotBlank()) { Text(stringResource(R.string.save)) } },
+            dismissButton = { TextButton(onClick = { showGoalEditor = false; errorRes = null }, enabled = !busy) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
     allocatingGoal?.let { goal ->
         var amount by remember(goal.id) { mutableStateOf("") }
         AlertDialog(
-            onDismissRequest = { allocatingGoal = null },
+            onDismissRequest = { if (!busy) allocatingGoal = null },
             title = { Text(stringResource(R.string.allocate_to_goal, goal.name)) },
-            text = { OutlinedTextField(amount, { amount = it }, label = { Text(stringResource(R.string.amount_bdt)) }) },
-            confirmButton = { Button(onClick = { scope.launch { if (onAllocate(goal.id, amount) is SavingsActionResult.Saved) { allocatingGoal = null; errorRes = null } else errorRes = R.string.insufficient_or_invalid_savings } }) { Text(stringResource(R.string.allocate_savings)) } },
-            dismissButton = { TextButton(onClick = { allocatingGoal = null }) { Text(stringResource(R.string.cancel)) } },
+            text = { Column(Modifier.verticalScroll(rememberScrollState())) { OutlinedTextField(amount, { amount = it }, label = { Text(stringResource(R.string.amount_bdt)) }); errorRes?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) } } },
+            confirmButton = { Button(onClick = { busy = true; scope.launch { try { if (onAllocate(goal.id, amount) is SavingsActionResult.Saved) { allocatingGoal = null; errorRes = null } else errorRes = R.string.insufficient_or_invalid_savings } finally { busy = false } } }, enabled = !busy) { Text(stringResource(R.string.allocate_savings)) } },
+            dismissButton = { TextButton(onClick = { allocatingGoal = null; errorRes = null }, enabled = !busy) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }

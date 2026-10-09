@@ -44,18 +44,20 @@ class TransactionListViewModel(
 
     fun setQuery(query: String) = mutableState.update { it.copy(query = query) }
 
-    fun update(transaction: Transaction) {
-        viewModelScope.launch {
-            runCatching { repository.update(transaction) }
-                .onFailure { error -> mutableState.update { it.copy(error = error.message) } }
-        }
+    suspend fun update(transaction: Transaction): Boolean = action { repository.update(transaction) }
+
+    private suspend fun action(block: suspend () -> Unit): Boolean = try {
+        block()
+        mutableState.update { it.copy(error = null) }
+        true
+    } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled
+    } catch (_: Exception) {
+        mutableState.update { it.copy(error = "operation_failed") }
+        false
     }
 
-    fun delete(id: String, confirmed: Boolean) {
-        if (!confirmed) return
-        viewModelScope.launch {
-            runCatching { repository.delete(id) }
-                .onFailure { error -> mutableState.update { it.copy(error = error.message) } }
-        }
+    suspend fun delete(id: String, confirmed: Boolean): Boolean {
+        if (!confirmed) return false
+        return action { repository.delete(id) }
     }
 }

@@ -56,16 +56,21 @@ class RoomRecurringRepository(
             .also { onDataChanged() }
     }
 
-    override suspend fun skipOccurrence(id: String) {
+    override suspend fun skipOccurrence(id: String, expectedDueAtEpochMillis: Long) {
         val now = nowEpochMillis()
-        val item = requireNotNull(find(id))
-        dao.upsert(item.copy(nextDueAtEpochMillis = RecurringDatePolicy.nextDue(item.nextDueAtEpochMillis, now), updatedAtEpochMillis = now).toEntity())
+        database.withTransaction {
+            val item = requireNotNull(find(id))
+            require(item.isEnabled && item.nextDueAtEpochMillis == expectedDueAtEpochMillis) { "Recurring occurrence is stale" }
+            dao.upsert(item.copy(nextDueAtEpochMillis = RecurringDatePolicy.nextDue(item.nextDueAtEpochMillis, now), updatedAtEpochMillis = now).toEntity())
+        }
         onDataChanged()
     }
 
     override suspend fun disable(id: String) {
-        val item = requireNotNull(find(id))
-        dao.upsert(item.copy(isEnabled = false, updatedAtEpochMillis = nowEpochMillis()).toEntity())
+        database.withTransaction {
+            val item = requireNotNull(find(id))
+            dao.upsert(item.copy(isEnabled = false, updatedAtEpochMillis = nowEpochMillis()).toEntity())
+        }
         onDataChanged()
     }
 }

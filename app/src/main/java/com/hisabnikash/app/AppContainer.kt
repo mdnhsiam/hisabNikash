@@ -31,11 +31,14 @@ import com.hisabnikash.app.backup.drive.DriveAuthorizationClient
 import com.hisabnikash.app.backup.drive.DriveBackupStore
 import com.hisabnikash.app.backup.drive.DriveRestClient
 import com.hisabnikash.app.backup.PreRestoreBackupStore
+import com.hisabnikash.app.backup.BackupOperationGate
+import kotlinx.coroutines.flow.first
 
 class AppContainer(
     val applicationContext: Context,
 ) {
     val database: HisabDatabase by lazy { HisabDatabase.create(applicationContext) }
+    val backupOperationGate = BackupOperationGate()
     val userPreferences: UserPreferences by lazy { UserPreferences.create(applicationContext) }
     val backupScheduler: BackupScheduler by lazy { BackupScheduler(WorkManagerBackupGateway(applicationContext)) }
     private val onDataChanged: () -> Unit = {
@@ -53,7 +56,7 @@ class AppContainer(
     val driveBackupPasswordCache: BackupPasswordCache by lazy { AndroidBackupSecretStore(applicationContext, "drive") }
     val snapshotExporter: SnapshotExporter by lazy { SnapshotExporter(database) }
     val snapshotImporter: SnapshotImporter by lazy { SnapshotImporter(database) }
-    val preRestoreBackupStore: PreRestoreBackupStore by lazy { PreRestoreBackupStore(applicationContext, snapshotExporter, snapshotImporter) }
+    val preRestoreBackupStore: PreRestoreBackupStore by lazy { PreRestoreBackupStore(applicationContext, snapshotExporter, snapshotImporter, backupOperationGate) }
     val localBackupStore: LocalBackupStore by lazy {
         LocalBackupStore(
             DocumentTreeAccess(applicationContext),
@@ -62,11 +65,18 @@ class AppContainer(
             snapshotImporter,
             localBackupPasswordCache,
             preRestoreBackupStore,
+            operationGate = backupOperationGate,
         )
     }
     val driveAuthorizationClient: DriveAuthorizationClient by lazy { DriveAuthorizationClient(applicationContext) }
     val driveBackupStore: DriveBackupStore by lazy {
-        DriveBackupStore(DriveRestClient(), snapshotExporter, snapshotImporter, preRestoreBackupStore)
+        DriveBackupStore(
+            DriveRestClient(), snapshotExporter, snapshotImporter, preRestoreBackupStore,
+            operationGate = backupOperationGate,
+            isEnabled = { userPreferences.state.first().driveBackupEnabled },
+            setEnabled = userPreferences::setDriveBackupEnabled,
+            passwordCache = driveBackupPasswordCache,
+        )
     }
     val dataDeletionUseCase: DataDeletionUseCase by lazy {
         DataDeletionUseCase(
@@ -84,6 +94,7 @@ class AppContainer(
                 preRestoreBackupStore.clear()
             },
             inTransaction = { operation -> database.withTransaction { operation() } },
+            operationGate = backupOperationGate,
         )
     }
 }

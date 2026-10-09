@@ -15,16 +15,13 @@ class LocalBackupWorker(
 ) : CoroutineWorker(appContext, params) {
     override suspend fun doWork(): Result {
         val container = (applicationContext as HisabApplication).container
-        val password = container.localBackupPasswordCache.load() ?: return Result.success()
         return try {
-            container.localBackupStore.backUpNow(password)
+            container.localBackupStore.backUpQueued()
             Result.success()
         } catch (error: BackupNotEnabledException) {
             Result.success()
         } catch (error: Throwable) {
             if (LocalBackupWorkerPolicy.shouldRetry(error)) Result.retry() else Result.failure()
-        } finally {
-            password.fill('\u0000')
         }
     }
 }

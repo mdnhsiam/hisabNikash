@@ -2,6 +2,10 @@ package com.hisabnikash.app.backup.crypto
 
 import com.hisabnikash.app.backup.model.BackupEnvelope
 import java.security.GeneralSecurityException
+import java.security.NoSuchAlgorithmException
+import java.nio.CharBuffer
+import java.nio.charset.StandardCharsets
+import javax.crypto.Mac
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.SecretKeyFactory
@@ -17,7 +21,7 @@ class BackupCrypto(
     private val secureRandom: SecureRandom = SecureRandom(),
 ) {
     init {
-        require(pbkdf2Iterations >= 10_000)
+        require(pbkdf2Iterations in 10_000..MAX_PBKDF2_ITERATIONS)
     }
 
     fun encrypt(snapshotBytes: ByteArray, password: CharArray): BackupEnvelope {
@@ -77,7 +81,12 @@ class BackupCrypto(
     private fun deriveKey(password: CharArray, salt: ByteArray, iterations: Int): ByteArray {
         val spec = PBEKeySpec(password, salt, iterations, KEY_BITS)
         return try {
-            SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded
+            try {
+                SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded
+            } catch (_: NoSuchAlgorithmException) {
+                // Android API 24/25 supplies HmacSHA256 but not this key factory.
+                Pbkdf2Sha256.derive(password, salt, iterations)
+            }
         } finally {
             spec.clearPassword()
         }
@@ -87,13 +96,43 @@ class BackupCrypto(
 
     companion object {
         const val FORMAT_VERSION = 1
-        const val DEFAULT_PBKDF2_ITERATIONS = 210_000
+        const val DEFAULT_PBKDF2_ITERATIONS = 600_000
         private const val MAX_PBKDF2_ITERATIONS = 1_000_000
         private const val SALT_BYTES = 16
         private const val NONCE_BYTES = 12
         private const val KEY_BITS = 256
         private const val TAG_BITS = 128
         private const val CIPHER_TRANSFORMATION = "AES/GCM/NoPadding"
+    }
+}
+
+/** RFC 8018 section 5.2, one 32-byte block for the existing AES-256 format. */
+internal object Pbkdf2Sha256 {
+    fun derive(password: CharArray, salt: ByteArray, iterations: Int): ByteArray {
+        require(iterations > 0)
+        val encoded = StandardCharsets.UTF_8.encode(CharBuffer.wrap(password))
+        val passwordBytes = ByteArray(encoded.remaining()).also(encoded::get)
+        val mac = Mac.getInstance("HmacSHA256")
+        var u = byteArrayOf()
+        val block = salt.copyOf(salt.size + 4).apply { this[lastIndex] = 1 }
+        try {
+            // An empty HMAC key is equivalent to a single zero octet after padding.
+            mac.init(SecretKeySpec(if (passwordBytes.isEmpty()) byteArrayOf(0) else passwordBytes, "HmacSHA256"))
+            u = mac.doFinal(block)
+            val result = u.copyOf()
+            repeat(iterations - 1) {
+                val next = mac.doFinal(u)
+                u.fill(0)
+                u = next
+                result.indices.forEach { index -> result[index] = (result[index].toInt() xor u[index].toInt()).toByte() }
+            }
+            return result
+        } finally {
+            passwordBytes.fill(0)
+            if (encoded.hasArray()) encoded.array().fill(0)
+            block.fill(0)
+            u.fill(0)
+        }
     }
 }
 

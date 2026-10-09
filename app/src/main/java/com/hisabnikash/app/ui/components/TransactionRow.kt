@@ -16,7 +16,7 @@ import com.hisabnikash.app.core.money.MoneyFormatter
 @Composable
 fun TransactionRow(transaction: Transaction, modifier: Modifier = Modifier) {
     Row(modifier = modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(transaction.description, style = MaterialTheme.typography.bodyLarge)
+        Text(transaction.description, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(end = 8.dp), maxLines = 2)
         Text(
             text = (if (transaction.type == TransactionType.EXPENSE) "−" else "+") + MoneyFormatter.formatMinorUnits(transaction.amountMinor),
             color = if (transaction.type == TransactionType.EXPENSE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,

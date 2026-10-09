@@ -15,6 +15,7 @@ import com.hisabnikash.app.MainActivity
 import com.hisabnikash.app.R
 import com.hisabnikash.app.core.model.RecurringItem
 import com.hisabnikash.app.core.money.MoneyFormatter
+import android.net.Uri
 
 class NotificationFactory(private val context: Context) {
     fun createChannel() {
@@ -32,13 +33,17 @@ class NotificationFactory(private val context: Context) {
         createChannel()
         val reviewIntent = PendingIntent.getActivity(
             context,
-            item.id.hashCode(),
+            0,
             Intent(context, MainActivity::class.java)
+                .setData(identity(item, "review"))
                 .putExtra(EXTRA_RECURRING_ID, item.id)
                 .putExtra(EXTRA_DUE_AT, item.nextDueAtEpochMillis),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(NotificationCompat.Builder(context, CHANNEL_ID).setSmallIcon(R.drawable.ic_launcher)
+                .setContentTitle(context.getString(R.string.recurring_title)).setContentText(context.getString(R.string.open_review)).build())
             .setSmallIcon(R.drawable.ic_launcher)
             .setContentTitle(item.description)
             .setContentText(MoneyFormatter.formatMinorUnits(item.amountMinor))
@@ -51,7 +56,7 @@ class NotificationFactory(private val context: Context) {
         }
         val built = notification.build()
         try {
-            NotificationManagerCompat.from(context).notify(item.id.hashCode(), built)
+            NotificationManagerCompat.from(context).notify(item.id, 0, built)
         } catch (_: SecurityException) {
             // Permission can be revoked between the explicit check and this call.
         }
@@ -59,12 +64,17 @@ class NotificationFactory(private val context: Context) {
 
     private fun action(item: RecurringItem, action: String, offset: Int): PendingIntent = PendingIntent.getBroadcast(
         context,
-        item.id.hashCode() + offset,
+        offset,
         Intent(context, ReminderReceiver::class.java).setAction(action)
+            .setData(identity(item, action))
             .putExtra(EXTRA_RECURRING_ID, item.id)
             .putExtra(EXTRA_DUE_AT, item.nextDueAtEpochMillis),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
+
+    private fun identity(item: RecurringItem, action: String): Uri = Uri.Builder()
+        .scheme("hisabnikash").authority("recurring").appendPath(item.id)
+        .appendPath(item.nextDueAtEpochMillis.toString()).appendPath(action).build()
 
     companion object {
         const val CHANNEL_ID = "recurring_reminders"

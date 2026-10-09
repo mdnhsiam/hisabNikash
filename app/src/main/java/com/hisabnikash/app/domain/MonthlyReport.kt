@@ -12,4 +12,7 @@ data class MonthlyReport(
     val netChangeMinor: Long,
     val expenseByCategory: Map<String?, Long>,
     val expenseByPaymentMethod: Map<PaymentMethod, Long>,
+    val dailyTotals: Map<java.time.LocalDate, DailyTotals> = emptyMap(),
 )
+
+data class DailyTotals(val incomeMinor: Long = 0, val expenseMinor: Long = 0)

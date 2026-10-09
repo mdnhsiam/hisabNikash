@@ -20,14 +20,16 @@ class DashboardViewModel(
     private val currentMonth: () -> MonthKey = { MonthKey.fromInstant(Instant.now()) },
     budgets: Flow<List<Budget>> = flowOf(emptyList()),
     allocations: Flow<List<GoalAllocation>> = flowOf(emptyList()),
+    months: Flow<MonthKey> = flowOf(currentMonth()),
+    categories: Flow<List<com.hisabnikash.app.core.model.Category>> = flowOf(emptyList()),
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(DashboardState(emptyDashboardSummary(currentMonth())))
     val state: StateFlow<DashboardState> = mutableState
 
     init {
         viewModelScope.launch {
-            combine(transactionRepository.observeAll(), budgets, allocations) { transactions, currentBudgets, currentAllocations ->
-                DashboardState(FinanceCalculator.dashboard(transactions, currentBudgets, currentAllocations, currentMonth()))
+            combine(transactionRepository.observeAll(), budgets, allocations, months, categories) { transactions, currentBudgets, currentAllocations, month, categoryList ->
+                DashboardState(FinanceCalculator.dashboard(transactions, currentBudgets, currentAllocations, month), categoryList.associateBy { it.id })
             }.collect(mutableState)
         }
     }

@@ -72,8 +72,16 @@ object FinanceCalculator {
         var previousExpense = 0L
         val byCategory = linkedMapOf<String?, Long>()
         val byPayment = linkedMapOf<PaymentMethod, Long>()
+        val daily = linkedMapOf<java.time.LocalDate, DailyTotals>()
 
         transactions.forEach { transaction ->
+            if (transaction.occurredAtEpochMillis in currentStart until currentEnd) {
+                val date = java.time.Instant.ofEpochMilli(transaction.occurredAtEpochMillis).atZone(zone).toLocalDate()
+                val previous = daily[date] ?: DailyTotals()
+                daily[date] = if (transaction.type == TransactionType.INCOME)
+                    previous.copy(incomeMinor = Math.addExact(previous.incomeMinor, transaction.amountMinor))
+                else previous.copy(expenseMinor = Math.addExact(previous.expenseMinor, transaction.amountMinor))
+            }
             when (transaction.occurredAtEpochMillis) {
                 in currentStart until currentEnd -> when (transaction.type) {
                     TransactionType.INCOME -> income = Math.addExact(income, transaction.amountMinor)
@@ -100,6 +108,7 @@ object FinanceCalculator {
             netChangeMinor = Math.subtractExact(net, previousNet),
             expenseByCategory = byCategory.toSortedMap(compareBy(nullsLast()) { it }),
             expenseByPaymentMethod = byPayment.toSortedMap(),
+            dailyTotals = daily.toSortedMap(reverseOrder()),
         )
     }
 }

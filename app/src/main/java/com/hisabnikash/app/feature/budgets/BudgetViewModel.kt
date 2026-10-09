@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
 data class BudgetState(
@@ -34,20 +35,25 @@ sealed interface BudgetSaveResult {
     data class Failed(val message: String) : BudgetSaveResult
 }
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class BudgetViewModel(
     private val repository: BudgetRepository,
     private val month: MonthKey,
     categories: Flow<List<Category>> = flowOf(emptyList()),
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
     private val newId: () -> String = { UUID.randomUUID().toString() },
+    months: Flow<MonthKey> = flowOf(month),
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(BudgetState(month))
     val state: StateFlow<BudgetState> = mutableState
 
     init {
         viewModelScope.launch {
-            combine(repository.observeMonth(month), categories) { budgets, categoryList -> budgets to categoryList }
-                .collect { (budgets, categoryList) -> mutableState.update { it.copy(budgets = budgets, categories = categoryList) } }
+            months.flatMapLatest { selectedMonth ->
+                combine(repository.observeMonth(selectedMonth), categories) { budgets, categoryList ->
+                    BudgetState(selectedMonth, budgets, categoryList)
+                }
+            }.collect(mutableState)
         }
     }
 
@@ -58,7 +64,7 @@ class BudgetViewModel(
         val now = nowEpochMillis()
         val budget = Budget(
             id = existing?.id ?: newId(),
-            monthKey = month.value,
+            monthKey = mutableState.value.month.value,
             categoryId = categoryId,
             amountMinor = parsed.minorUnits,
             createdAtEpochMillis = existing?.createdAtEpochMillis ?: now,
@@ -69,6 +75,10 @@ class BudgetViewModel(
     }
 
     fun delete(id: String) {
-        viewModelScope.launch { repository.delete(id) }
+        viewModelScope.launch {
+            try { repository.delete(id); mutableState.update { it.copy(error = null) } }
+            catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (_: Exception) { mutableState.update { it.copy(error = "operation_failed") } }
+        }
     }
 }

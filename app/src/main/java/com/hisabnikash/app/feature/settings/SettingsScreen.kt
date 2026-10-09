@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -56,6 +58,7 @@ fun SettingsScreen(
     recurringContent: @Composable () -> Unit = {},
 ) {
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showBackupManagement by remember { mutableStateOf(false) }
     var showBackupPassword by remember { mutableStateOf(false) }
     var password by remember { mutableStateOf("") }
     var restorePassword by remember(restoreDocumentUri) { mutableStateOf("") }
@@ -127,11 +130,33 @@ fun SettingsScreen(
             Button(onClick = onConnectDrive) { Text(stringResource(R.string.connect_google_drive)) }
         }
         backupMessageRes?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.primary) }
+        TextButton(onClick = { showBackupManagement = true }) {
+            Text(stringResource(R.string.manage_backup_copies))
+        }
         recurringContent()
 
         Text(stringResource(R.string.privacy_title), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.delete_all_data_explanation), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Button(onClick = { showDeleteConfirmation = true }) { Text(stringResource(R.string.delete_all_data)) }
+    }
+
+    if (showBackupManagement) {
+        AlertDialog(
+            onDismissRequest = { showBackupManagement = false },
+            title = { Text(stringResource(R.string.manage_backup_copies)) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.external_backup_deletion_notice))
+                    Text(stringResource(R.string.disable_before_deleting_backup))
+                    Text(stringResource(R.string.delete_folder_backup_help))
+                    Text(stringResource(R.string.delete_drive_backup_help))
+                    Text(stringResource(R.string.backup_delete_irreversible), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showBackupManagement = false }) { Text(stringResource(R.string.got_it)) }
+            },
+        )
     }
 
     if (showDeleteConfirmation) {
@@ -231,7 +256,7 @@ private fun PasswordDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(titleRes)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     password,
                     onPasswordChange,

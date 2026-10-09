@@ -17,6 +17,8 @@ import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
 
 data class RecurringState(
     val items: List<RecurringItem> = emptyList(),
@@ -42,11 +44,12 @@ class RecurringViewModel(
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(RecurringState())
     val state: StateFlow<RecurringState> = mutableState
+    private val actionMutex = Mutex()
 
     init {
         viewModelScope.launch {
             repository.observeAll().collect { items ->
-                mutableState.value = RecurringState(items.sortedBy(RecurringItem::nextDueAtEpochMillis))
+                mutableState.value = mutableState.value.copy(items = items.sortedBy(RecurringItem::nextDueAtEpochMillis))
                 scheduler.rescheduleAll(items)
             }
         }
@@ -59,12 +62,13 @@ class RecurringViewModel(
 
     suspend fun create(draft: RecurringDraft): Boolean {
         val parsed = MoneyParser.parseToMinorUnits(draft.amountInput)
-        val dueDate = runCatching { java.time.LocalDate.parse(draft.dueDateIso) }.getOrNull()
+        val dueDate = com.hisabnikash.app.core.time.DateInput.parse(draft.dueDateIso)
         if (draft.description.isBlank() || draft.categoryId == null || parsed !is MoneyParseResult.Success || dueDate == null) return false
         val now = nowEpochMillis()
         val nextDue = dueDate.atStartOfDay(MonthKey.DHAKA).toInstant().toEpochMilli()
         if (nextDue <= now) return false
-        save(
+        return action {
+          save(
             RecurringItem(
                 id = newId(),
                 type = draft.type,
@@ -78,40 +82,51 @@ class RecurringViewModel(
                 nextDueAtEpochMillis = nextDue,
                 createdAtEpochMillis = now,
             ),
-        )
-        return true
+          )
+        }
     }
 
-    suspend fun quickConfirm(id: String): Transaction {
-        val item = requireNotNull(repository.find(id))
-        val transaction = repository.confirmOccurrence(id, item.nextDueAtEpochMillis)
+    suspend fun quickConfirm(id: String, expectedDueAt: Long = displayedDue(id)): Boolean = action {
+        repository.confirmOccurrence(id, expectedDueAt)
         repository.find(id)?.let(scheduler::schedule)
-        return transaction
     }
 
     suspend fun openForReview(id: String): RecurringEditor? = repository.find(id)?.let(RecurringEditor::from)
 
-    suspend fun confirmWithEdits(id: String, editor: RecurringEditor): Transaction {
-        val item = requireNotNull(repository.find(id))
-        val transaction = repository.confirmOccurrence(id, item.nextDueAtEpochMillis, editor)
-        repository.find(id)?.let(scheduler::schedule)
-        return transaction
-    }
-
-    suspend fun skip(id: String) {
-        repository.skipOccurrence(id)
+    suspend fun confirmWithEdits(id: String, editor: RecurringEditor, expectedDueAt: Long = displayedDue(id)): Boolean = action {
+        repository.confirmOccurrence(id, expectedDueAt, editor)
         repository.find(id)?.let(scheduler::schedule)
     }
 
-    suspend fun disable(id: String) {
+    suspend fun skip(id: String, expectedDueAt: Long = displayedDue(id)): Boolean = action {
+        repository.skipOccurrence(id, expectedDueAt)
+        repository.find(id)?.let(scheduler::schedule)
+    }
+
+    suspend fun disable(id: String): Boolean = action {
         repository.disable(id)
         scheduler.cancel(id)
     }
 
+    private fun displayedDue(id: String) = state.value.items.firstOrNull { it.id == id }?.nextDueAtEpochMillis ?: Long.MIN_VALUE
+
+    private suspend fun action(block: suspend () -> Unit): Boolean {
+        if (!actionMutex.tryLock()) return false
+        return try {
+            block()
+            mutableState.value = mutableState.value.copy(error = null)
+            true
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            mutableState.value = mutableState.value.copy(error = "operation_failed")
+            false
+        } finally { actionMutex.unlock() }
+    }
+
     fun delete(id: String) {
         viewModelScope.launch {
-            repository.delete(id)
-            scheduler.cancel(id)
+            action { repository.delete(id); scheduler.cancel(id) }
         }
     }
 }

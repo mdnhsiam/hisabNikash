@@ -19,29 +19,36 @@ sealed interface DriveAuthorizationResult {
     data class Failed(val cause: Throwable) : DriveAuthorizationResult
 }
 
-class DriveAuthorizationClient(private val context: Context) {
+interface DriveAuthorizationGateway {
+    suspend fun authorizeDriveAppData(activity: Activity): DriveAuthorizationResult
+    suspend fun currentAccessToken(): String?
+    fun completeResolution(data: Intent): DriveAuthorizationResult
+    suspend fun revoke()
+}
+
+class DriveAuthorizationClient(private val context: Context) : DriveAuthorizationGateway {
     private val request: AuthorizationRequest
         get() = AuthorizationRequest.builder()
             .setRequestedScopes(listOf(Scope(DriveRestClient.DRIVE_APPDATA_SCOPE)))
             .build()
 
-    suspend fun authorizeDriveAppData(activity: Activity): DriveAuthorizationResult =
+    override suspend fun authorizeDriveAppData(activity: Activity): DriveAuthorizationResult =
         authorizationResult(Identity.getAuthorizationClient(activity).authorize(request))
 
-    suspend fun currentAccessToken(): String? = when (
+    override suspend fun currentAccessToken(): String? = when (
         val result = authorizationResult(Identity.getAuthorizationClient(context).authorize(request))
     ) {
         is DriveAuthorizationResult.Authorized -> result.accessToken
         else -> null
     }
 
-    fun completeResolution(data: Intent): DriveAuthorizationResult = runCatching {
+    override fun completeResolution(data: Intent): DriveAuthorizationResult = runCatching {
         val result = Identity.getAuthorizationClient(context).getAuthorizationResultFromIntent(data)
         result.accessToken?.let(DriveAuthorizationResult::Authorized)
             ?: throw DriveReauthorizationRequired()
     }.getOrElse(DriveAuthorizationResult::Failed)
 
-    suspend fun revoke() {
+    override suspend fun revoke() {
         Identity.getAuthorizationClient(context).revokeAccess(RevokeAccessRequest.builder().build()).await()
     }
 

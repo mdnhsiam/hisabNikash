@@ -38,18 +38,27 @@ import com.hisabnikash.app.core.model.CategoryType
 import com.hisabnikash.app.ui.components.CategoryDropdown
 import com.hisabnikash.app.ui.components.PaymentMethodDropdown
 import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import com.hisabnikash.app.core.time.DateInput
+import com.hisabnikash.app.core.time.MonthKey
 
 @Composable
 fun TransactionListScreen(
     state: TransactionListState,
     onQueryChange: (String) -> Unit,
-    onUpdate: (Transaction) -> Unit,
-    onDelete: (String, Boolean) -> Unit,
+    onUpdate: suspend (Transaction) -> Boolean,
+    onDelete: suspend (String, Boolean) -> Boolean,
     modifier: Modifier = Modifier,
 ) {
     val useBangla = LocalConfiguration.current.locales[0].language == "bn"
     var editing by remember { mutableStateOf<Transaction?>(null) }
     var deleting by remember { mutableStateOf<Transaction?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var actionError by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     Column(modifier = modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Text(stringResource(R.string.transactions_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 16.dp))
         OutlinedTextField(
@@ -66,8 +75,8 @@ fun TransactionListScreen(
                 items(state.visibleTransactions, key = Transaction::id) { transaction ->
                     Card(modifier = Modifier.fillMaxWidth().clickable { editing = transaction }) {
                         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Column {
-                                Text(transaction.description, style = MaterialTheme.typography.titleMedium)
+                            Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                                Text(transaction.description, style = MaterialTheme.typography.titleMedium, maxLines = 2)
                                 Text(
                                     transaction.oneOffCategoryLabel
                                         ?: transaction.categoryId?.let { state.categories[it]?.localizedName(useBangla) ?: it }
@@ -75,6 +84,7 @@ fun TransactionListScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                                 Text(transaction.paymentMethod.localizedLabel(), style = MaterialTheme.typography.bodySmall)
+                                Text(java.time.Instant.ofEpochMilli(transaction.occurredAtEpochMillis).atZone(MonthKey.DHAKA).toLocalDate().format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(LocalConfiguration.current.locales[0])), style = MaterialTheme.typography.bodySmall)
                             }
                             Column {
                                 Text(
@@ -99,54 +109,61 @@ fun TransactionListScreen(
         var note by remember(transaction.id) { mutableStateOf(transaction.note.orEmpty()) }
         var date by remember(transaction.id) { mutableStateOf(java.time.Instant.ofEpochMilli(transaction.occurredAtEpochMillis).atZone(com.hisabnikash.app.core.time.MonthKey.DHAKA).toLocalDate().toString()) }
         val parsedAmount = MoneyParser.parseToMinorUnits(amount)
-        val parsedDate = runCatching { java.time.LocalDate.parse(date) }.getOrNull()
+        val parsedDate = DateInput.parse(date)
+        val expectedType = if (type == TransactionType.EXPENSE) CategoryType.EXPENSE else CategoryType.INCOME
+        val validCategory = state.categories[categoryId]?.type == expectedType
         AlertDialog(
-            onDismissRequest = { editing = null },
+            onDismissRequest = { if (!busy) { editing = null; actionError = false } },
             title = { Text(stringResource(R.string.edit_transaction)) },
-            text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(type == TransactionType.EXPENSE, { type = TransactionType.EXPENSE }, label = { Text(stringResource(R.string.expense)) })
-                    FilterChip(type == TransactionType.INCOME, { type = TransactionType.INCOME }, label = { Text(stringResource(R.string.income)) })
+                    FilterChip(type == TransactionType.EXPENSE, { if (type != TransactionType.EXPENSE) categoryId = null; type = TransactionType.EXPENSE }, enabled = !busy, label = { Text(stringResource(R.string.expense)) })
+                    FilterChip(type == TransactionType.INCOME, { if (type != TransactionType.INCOME) categoryId = null; type = TransactionType.INCOME }, enabled = !busy, label = { Text(stringResource(R.string.income)) })
                 }
                 OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text(stringResource(R.string.amount_bdt)) })
                 OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text(stringResource(R.string.description)) })
-                CategoryDropdown(state.categories.values.filter { it.type == (if (type == TransactionType.EXPENSE) CategoryType.EXPENSE else CategoryType.INCOME) && it.isActive }, categoryId, { categoryId = it }, null)
+                CategoryDropdown(state.categories.values.filter { it.type == expectedType && (it.isActive || it.id == categoryId) }, categoryId, { categoryId = it }, null)
                 PaymentMethodDropdown(paymentMethod, { paymentMethod = it })
                 OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text(stringResource(R.string.transaction_date)) })
                 OutlinedTextField(value = note, onValueChange = { note = it }, label = { Text(stringResource(R.string.note_optional)) })
+                if (actionError) Text(stringResource(R.string.operation_failed), color = MaterialTheme.colorScheme.error)
             }
             },
             confirmButton = {
                 Button(onClick = {
-                    onUpdate(transaction.copy(
+                    busy = true
+                    scope.launch { try {
+                    val saved = onUpdate(transaction.copy(
                         type = type,
                         amountMinor = (parsedAmount as MoneyParseResult.Success).minorUnits,
                         description = description.trim(),
                         categoryId = categoryId,
+                        oneOffCategoryLabel = transaction.oneOffCategoryLabel.takeIf { categoryId == transaction.categoryId && type == transaction.type },
                         paymentMethod = paymentMethod,
                         note = note.trim().ifEmpty { null },
                         occurredAtEpochMillis = parsedDate!!.atStartOfDay(com.hisabnikash.app.core.time.MonthKey.DHAKA).toInstant().toEpochMilli(),
                         updatedAtEpochMillis = System.currentTimeMillis(),
                     ))
-                    editing = null
-                }, enabled = description.isNotBlank() && categoryId != null && parsedAmount is MoneyParseResult.Success && parsedDate != null) { Text(stringResource(R.string.save)) }
+                    if (saved) { editing = null; actionError = false } else actionError = true
+                    } finally { busy = false } }
+                }, enabled = !busy && description.isNotBlank() && validCategory && parsedAmount is MoneyParseResult.Success && parsedDate != null) { Text(stringResource(R.string.save)) }
             },
-            dismissButton = { TextButton(onClick = { editing = null }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { TextButton(onClick = { editing = null; actionError = false }, enabled = !busy) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
     deleting?.let { transaction ->
         AlertDialog(
-            onDismissRequest = { deleting = null },
+            onDismissRequest = { if (!busy) { deleting = null; actionError = false } },
             title = { Text(stringResource(R.string.delete_transaction)) },
-            text = { Text(stringResource(R.string.delete_transaction_message)) },
+            text = { Column { Text(stringResource(R.string.delete_transaction_message)); if (actionError) Text(stringResource(R.string.operation_failed), color = MaterialTheme.colorScheme.error) } },
             confirmButton = {
                 Button(onClick = {
-                    onDelete(transaction.id, true)
-                    deleting = null
-                }) { Text(stringResource(R.string.delete)) }
+                    busy = true
+                    scope.launch { try { if (onDelete(transaction.id, true)) { deleting = null; actionError = false } else actionError = true } finally { busy = false } }
+                }, enabled = !busy) { Text(stringResource(R.string.delete)) }
             },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { TextButton(onClick = { deleting = null; actionError = false }, enabled = !busy) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">হিসাব</string>
+    <string name="app_name">হিসাব নিকাশ</string>
     <string name="nav_dashboard">ড্যাশবোর্ড</string>
     <string name="nav_transactions">লেনদেন</string>
     <string name="nav_reports">রিপোর্ট</string>
@@ -106,7 +106,7 @@
     <string name="backup_password">ব্যাকআপ পাসওয়ার্ড</string>
     <string name="restore_password">রিস্টোর পাসওয়ার্ড</string>
     <string name="password">পাসওয়ার্ড</string>
-    <string name="password_warning">কমপক্ষে ৮ অক্ষর ব্যবহার করুন। সার্ভারবিহীন এই অ্যাপ ভুলে যাওয়া ব্যাকআপ পাসওয়ার্ড ফিরিয়ে দিতে পারবে না।</string>
+    <string name="password_warning">কমপক্ষে ৮ অক্ষর ব্যবহার করুন; দীর্ঘ ও অনন্য পাসফ্রেজ বেশি নিরাপদ। সার্ভারবিহীন এই অ্যাপ ভুলে যাওয়া ব্যাকআপ পাসওয়ার্ড ফিরিয়ে দিতে পারবে না।</string>
     <string name="backup_location_saved">ব্যাকআপ ফোল্ডার যুক্ত হয়েছে।</string>
     <string name="backup_location_error">ফোল্ডারটি ব্যবহার করা যায়নি।</string>
     <string name="backup_success">এনক্রিপ্টেড ব্যাকআপ সেভ হয়েছে।</string>
@@ -139,4 +139,14 @@
     <string name="frequency_monthly">প্রতি মাসে পুনরাবৃত্তি হবে</string>
     <string name="transaction_date">তারিখ (YYYY-MM-DD)</string>
     <string name="restore_replacement_warning">রিস্টোর করলে বর্তমান লোকাল ডাটা বদলে যাবে। এই ডিভাইসে এনক্রিপ্টেড আনডু কপি রাখা হবে।</string>
+    <string name="recurring_disabled">বন্ধ আছে</string>
+    <string name="daily_totals">দৈনিক হিসাব</string>
+    <string name="daily_income_expense">আয় %1$s • ব্যয় %2$s</string>
+    <string name="recurring_action_failed">বিলটি বদলে গেছে বা সেভ করা যায়নি। এই ফর্ম বন্ধ করে বর্তমান বিলটি আবার দেখুন।</string>
+    <string name="manage_backup_copies">ব্যাকআপ কপি পরিচালনা বা মুছুন</string>
+    <string name="external_backup_deletion_notice">লোকাল অ্যাপের ডাটা মুছলে বা Drive বিচ্ছিন্ন করলে আগে রাখা ব্যাকআপ কপি মুছে যায় না।</string>
+    <string name="disable_before_deleting_backup">নতুন স্বয়ংক্রিয় কপি ঠেকাতে আগে এখান থেকে ফোন-ফোল্ডার ব্যাকআপ বন্ধ করুন বা Google Drive বিচ্ছিন্ন করুন।</string>
+    <string name="delete_folder_backup_help">ফোন ফোল্ডার: Files অ্যাপে আপনার বেছে নেওয়া ব্যাকআপ ফোল্ডার খুলুন। শুধু অপ্রয়োজনীয় হিসাব নিকাশ ব্যাকআপ ফাইল মুছুন; আগের বা অস্থায়ী কপি থাকলে সেগুলোও দেখে নিন।</string>
+    <string name="delete_drive_backup_help">Google Drive: কম্পিউটারে Drive Settings → Manage apps খুলুন। HisabNikash খুঁজে তার hidden app-data মুছে ফেলার অপশন ব্যবহার করুন।</string>
+    <string name="backup_delete_irreversible">শেষ ব্যাকআপ মুছে ফেললে রিস্টোরের সুযোগ স্থায়ীভাবে হারাতে পারে। মুছার আগে অন্য একটি বৈধ কপি আছে কি না দেখুন।</string>
 </resources>

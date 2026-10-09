@@ -8,6 +8,18 @@ import org.junit.Test
 
 class DataDeletionUseCaseTest {
     @Test
+    fun `backup preferences are cleared before deleting financial records`() = runTest {
+        var backupsEnabled = true
+        val repository = object : ClearableRepository {
+            override suspend fun clearAll() {
+                assertFalse("deletion must prevent newly queued backup work before clearing the ledger", backupsEnabled)
+            }
+        }
+        val useCase = DataDeletionUseCase(listOf(repository)) { backupsEnabled = false }
+
+        assertTrue(useCase.deleteAllLocalData(confirmed = true))
+    }
+    @Test
     fun `unconfirmed deletion changes nothing`() = runTest {
         val stores = List(5) { RecordingStore() }
         var preferencesCleared = false

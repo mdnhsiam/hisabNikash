@@ -42,7 +42,19 @@ fun ReportsScreen(
             TextButton(onClick = onNextMonth) { Text(stringResource(R.string.next_month)) }
         }
         SummaryCard(stringResource(R.string.monthly_savings), MoneyFormatter.formatMinorUnits(report.netSavingsMinor))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SummaryCard(stringResource(R.string.income), MoneyFormatter.formatMinorUnits(report.incomeMinor), Modifier.weight(1f))
+            SummaryCard(stringResource(R.string.expense), MoneyFormatter.formatMinorUnits(report.expenseMinor), Modifier.weight(1f))
+        }
         SummaryCard(stringResource(R.string.previous_month_change), signedMoney(report.netChangeMinor))
+        Text(stringResource(R.string.daily_totals), style = MaterialTheme.typography.titleMedium)
+        report.dailyTotals.forEach { (day, totals) ->
+            Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Text(day.format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale)), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.daily_income_expense, MoneyFormatter.formatMinorUnits(totals.incomeMinor), MoneyFormatter.formatMinorUnits(totals.expenseMinor)))
+            }
+        }
+        if (report.dailyTotals.isEmpty()) Text(stringResource(R.string.no_transactions_message))
         Text(stringResource(R.string.by_category), style = MaterialTheme.typography.titleMedium)
         if (report.expenseByCategory.isEmpty()) Text(stringResource(R.string.no_expenses_this_month))
         report.expenseByCategory.forEach { (category, amount) ->
@@ -56,7 +68,7 @@ fun ReportsScreen(
 @Composable
 private fun BreakdownRow(label: String, amount: Long) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label)
+        Text(label, Modifier.weight(1f).padding(end = 8.dp), maxLines = 2)
         Text(MoneyFormatter.formatMinorUnits(amount))
     }
 }

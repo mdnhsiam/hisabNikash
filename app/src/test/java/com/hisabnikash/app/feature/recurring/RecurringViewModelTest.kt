@@ -22,6 +22,24 @@ import org.junit.Test
 class RecurringViewModelTest {
     @get:Rule val mainDispatcherRule = MainDispatcherRule()
 
+    @Test fun `stale displayed confirmation does not charge the next occurrence`() = runTest {
+        val repository = FakeRecurringRepository()
+        repository.items.value = listOf(recurring("bill", 100))
+        val viewModel = RecurringViewModel(repository, RecurringScheduler(FakeRecurringWorkGateway()) { 0 })
+        advanceUntilIdle()
+        repository.confirmOccurrence("bill", 100)
+        // The old screen has not received the new occurrence yet.
+        runCatching { viewModel.quickConfirm("bill") }
+        assertEquals(1, repository.confirmed.size)
+    }
+
+    @Test fun `missing recurring action is a visible failure instead of an exception`() = runTest {
+        val viewModel = RecurringViewModel(FakeRecurringRepository(), RecurringScheduler(FakeRecurringWorkGateway()) { 0 })
+        advanceUntilIdle()
+        assertTrue(runCatching { viewModel.quickConfirm("missing") }.isSuccess)
+        assertNotNull(viewModel.state.value.error)
+    }
+
     @Test
     fun `quick confirm and edited confirm require explicit action then advance due`() = runTest {
         val repository = FakeRecurringRepository()
@@ -36,7 +54,7 @@ class RecurringViewModelTest {
 
         val editor = viewModel.openForReview("bill")
         assertNotNull(editor)
-        viewModel.confirmWithEdits("bill", editor!!.copy(description = "Edited bill"))
+        viewModel.confirmWithEdits("bill", editor!!.copy(description = "Edited bill"), repository.items.value.single().nextDueAtEpochMillis)
         assertEquals("Edited bill", repository.confirmed.last().description)
     }
 
@@ -92,8 +110,9 @@ internal class FakeRecurringRepository : RecurringRepository {
         upsert(item.copy(nextDueAtEpochMillis = RecurringDatePolicy.nextDue(item.nextDueAtEpochMillis, 1_000)))
         return transaction
     }
-    override suspend fun skipOccurrence(id: String) {
+    override suspend fun skipOccurrence(id: String, expectedDueAtEpochMillis: Long) {
         val item = find(id) ?: error("missing")
+        require(item.nextDueAtEpochMillis == expectedDueAtEpochMillis)
         upsert(item.copy(nextDueAtEpochMillis = RecurringDatePolicy.nextDue(item.nextDueAtEpochMillis, 1_000)))
     }
     override suspend fun disable(id: String) {

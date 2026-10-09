@@ -30,7 +30,8 @@ class RoomSavingsRepository(
     override suspend fun archiveGoal(id: String, updatedAtEpochMillis: Long) { dao.archiveGoal(id, updatedAtEpochMillis); onDataChanged() }
 
     override suspend fun allocate(allocation: GoalAllocation) {
-        require(allocation.amountMinor > 0) { "Allocation must be positive" }
+        FinancialLimits.requirePositive(allocation.amountMinor)
+        require(allocation.id.isNotBlank() && allocation.reversesAllocationId == null)
         database.withTransaction {
             val goal = requireNotNull(dao.findGoal(allocation.goalId)) { "Goal not found" }
             require(!goal.isArchived) { "Goal is archived" }
@@ -38,7 +39,10 @@ class RoomSavingsRepository(
             val netSavings = snapshotDao.transactions().sumOf { transaction ->
                 if (transaction.type == com.hisabnikash.app.core.model.TransactionType.INCOME) transaction.amountMinor else -transaction.amountMinor
             }
-            val alreadyAllocated = snapshotDao.goalAllocations().sumOf { it.amountMinor }
+            val records = snapshotDao.goalAllocations()
+            val positiveTotal = FinancialLimits.total(records.filter { it.amountMinor > 0 }.map { it.amountMinor })
+            require(positiveTotal <= FinancialLimits.MAX_LEDGER_TOTAL_MINOR - allocation.amountMinor)
+            val alreadyAllocated = records.sumOf { it.amountMinor }
             require(allocation.amountMinor <= (netSavings - alreadyAllocated).coerceAtLeast(0)) { "Allocation exceeds available savings" }
             dao.insertAllocation(allocation.toEntity())
         }

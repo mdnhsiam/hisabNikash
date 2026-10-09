@@ -25,6 +25,11 @@ import com.hisabnikash.app.core.model.TransactionType
 import com.hisabnikash.app.ui.components.AmountField
 import com.hisabnikash.app.ui.components.CategoryDropdown
 import com.hisabnikash.app.ui.components.PaymentMethodDropdown
+import androidx.compose.runtime.*
+import com.hisabnikash.app.core.time.DateInput
+import com.hisabnikash.app.core.time.MonthKey
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 
 @Composable
 fun QuickEntryScreen(
@@ -38,7 +43,10 @@ fun QuickEntryScreen(
     onCustomCategoryChange: (String, Boolean) -> Unit = { _, _ -> },
     onPaymentMethodChange: (PaymentMethod) -> Unit = {},
     onNoteChange: (String) -> Unit = {},
+    onDateChange: (Long) -> Unit = {},
 ) {
+    var dateInput by remember(state.occurredAtEpochMillis) { mutableStateOf(java.time.Instant.ofEpochMilli(state.occurredAtEpochMillis).atZone(MonthKey.DHAKA).toLocalDate().toString()) }
+    val parsedDate = DateInput.parse(dateInput)
     Column(
         modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -88,10 +96,10 @@ fun QuickEntryScreen(
                 isError = state.errors.containsKey(FormField.CUSTOM_CATEGORY),
                 supportingText = state.errors[FormField.CUSTOM_CATEGORY]?.let { error -> { Text(stringResource(error)) } },
             )
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.toggleable(state.saveCustomCategory, role = Role.Checkbox, onValueChange = { onCustomCategoryChange(state.customCategoryLabel, it) }), verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
                     checked = state.saveCustomCategory,
-                    onCheckedChange = { onCustomCategoryChange(state.customCategoryLabel, it) },
+                    onCheckedChange = null,
                 )
                 Text(stringResource(R.string.save_category_for_later))
             }
@@ -99,6 +107,11 @@ fun QuickEntryScreen(
         HorizontalDivider()
         Text(stringResource(R.string.payment_method), style = MaterialTheme.typography.labelLarge)
         PaymentMethodDropdown(selected = state.paymentMethod, onSelected = onPaymentMethodChange)
+        OutlinedTextField(dateInput, { value ->
+            dateInput = value
+            DateInput.parse(value)?.let { onDateChange(it.atStartOfDay(MonthKey.DHAKA).toInstant().toEpochMilli()) }
+        }, label = { Text(stringResource(R.string.transaction_date)) }, singleLine = true,
+            isError = parsedDate == null, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(
             value = state.note,
             onValueChange = onNoteChange,
@@ -109,7 +122,7 @@ fun QuickEntryScreen(
         state.saveError?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
         Button(
             onClick = onSubmit,
-            enabled = !state.isSaving,
+            enabled = !state.isSaving && parsedDate != null,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(if (state.isSaving) stringResource(R.string.saving) else stringResource(R.string.save_transaction))

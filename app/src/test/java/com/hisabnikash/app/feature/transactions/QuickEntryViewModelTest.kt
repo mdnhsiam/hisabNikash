@@ -26,6 +26,20 @@ import org.junit.Test
 class QuickEntryViewModelTest {
     @get:Rule val mainDispatcherRule = MainDispatcherRule()
 
+    @Test fun `preference failure after commit does not offer a duplicate retry`() = runTest {
+        val transactions = FakeTransactionRepository()
+        val preference = object : PaymentMethodPreference {
+            override suspend fun get() = PaymentMethod.CASH
+            override suspend fun set(method: PaymentMethod) { error("Preference disk failed") }
+        }
+        val viewModel = QuickEntryViewModel(transactions, FakeCategoryRepository(), preference)
+        advanceUntilIdle()
+        viewModel.setAmount("10"); viewModel.setDescription("Committed")
+        assertTrue(viewModel.submit() is SubmitResult.Saved)
+        assertEquals(1, transactions.added.size)
+        assertEquals("", viewModel.state.value.amountInput)
+    }
+
     @Test
     fun `defaults to expense categories and last-used payment method`() = runTest {
         val fixture = Fixture(lastPaymentMethod = PaymentMethod.BKASH)

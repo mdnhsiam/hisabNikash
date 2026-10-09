@@ -9,8 +9,7 @@ import com.hisabnikash.app.backup.RestoreRecoveryStore
 import com.hisabnikash.app.backup.NoOpRestoreRecoveryStore
 import com.hisabnikash.app.data.preferences.LocalBackupPreferences
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import com.hisabnikash.app.backup.BackupOperationGate
 
 class LocalBackupStore(
     private val documentAccess: LocalDocumentAccess,
@@ -20,20 +19,29 @@ class LocalBackupStore(
     private val passwordCache: BackupPasswordCache,
     private val recoveryStore: RestoreRecoveryStore = NoOpRestoreRecoveryStore,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
+    private val operationGate: BackupOperationGate = BackupOperationGate(),
 ) {
-    private val operationMutex = Mutex()
-    suspend fun chooseBackupLocation(uri: Uri) {
+    suspend fun chooseBackupLocation(uri: Uri) = operationGate.run {
         if (!documentAccess.persistTreeAccess(uri)) throw BackupLocationUnavailableException()
         preferences.setLocalBackup(enabled = true, uri = uri.toString())
     }
 
-    suspend fun disable() {
+    suspend fun disable() = operationGate.run {
+        operationGate.invalidateAuthorization()
         preferences.setLocalBackup(enabled = false, uri = null)
-        preferences.setLastLocalBackupAt(null)
         passwordCache.clear()
+        preferences.setLastLocalBackupAt(null)
     }
 
-    suspend fun backUpNow(password: CharArray) = operationMutex.withLock {
+    suspend fun backUpNow(password: CharArray) = operationGate.run { writeBackup(password) }
+
+    suspend fun backUpQueued() = operationGate.run {
+        if (!preferences.state.first().localBackupEnabled) return@run
+        val password = passwordCache.load() ?: return@run
+        try { writeBackup(password) } finally { password.fill('\u0000') }
+    }
+
+    private suspend fun writeBackup(password: CharArray) {
         val settings = preferences.state.first()
         if (!settings.localBackupEnabled) throw BackupNotEnabledException()
         val tree = settings.localBackupUri?.let(Uri::parse) ?: throw BackupLocationUnavailableException()
@@ -47,12 +55,11 @@ class LocalBackupStore(
         }
     }
 
-    suspend fun restoreFromDocument(uri: Uri, password: CharArray): RestoreResult = operationMutex.withLock {
+    suspend fun restoreFromDocument(uri: Uri, password: CharArray): RestoreResult = operationGate.run {
         val encrypted = documentAccess.read(uri)
-        return try {
+        try {
             val validated = importer.validate(encrypted, password)
-            recoveryStore.save(password)
-            importer.apply(validated)
+            importer.apply(validated) { recoveryStore.save(password) }
         } finally {
             encrypted.fill(0)
         }

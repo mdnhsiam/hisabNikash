@@ -90,6 +90,92 @@ class LocalBackupStoreTest {
         assertEquals(1, documents.maxConcurrentWrites.get())
     }
 
+    @Test
+    fun `disable waits for active write and cannot resurrect password or timestamp`() = runTest {
+        val entered = java.util.concurrent.CountDownLatch(1)
+        val release = java.util.concurrent.CountDownLatch(1)
+        val documents = object : LocalDocumentAccess {
+            override fun persistTreeAccess(uri: Uri) = true
+            override fun read(uri: Uri) = byteArrayOf()
+            override fun writeAtomically(treeUri: Uri, fileName: String, bytes: ByteArray) {
+                entered.countDown()
+                check(release.await(5, java.util.concurrent.TimeUnit.SECONDS))
+            }
+        }
+        val preferences = FakePreferences(UserPreferenceState(localBackupEnabled = true, localBackupUri = "content://provider/tree/backups"))
+        val secrets = FakeSecrets()
+        val store = LocalBackupStore(documents, preferences, SnapshotExporter(database), SnapshotImporter(database, BackupCrypto(10_000)), secrets)
+        val backup = async(Dispatchers.IO) { store.backUpNow("password9".toCharArray()) }
+        check(entered.await(5, java.util.concurrent.TimeUnit.SECONDS))
+        val disable = async(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) { store.disable() }
+        val disabledDuringWrite = disable.isCompleted
+        release.countDown()
+        backup.await()
+        disable.await()
+
+        assertFalse("disable must wait for the active write", disabledDuringWrite)
+        assertFalse(preferences.state.value.localBackupEnabled)
+        assertEquals(null, preferences.state.value.lastLocalBackupAtEpochMillis)
+        assertEquals(null, secrets.password)
+    }
+
+    @Test
+    fun `recovery snapshot capture occurs within replacement transaction`() = runTest {
+        var capturedWithinTransaction = false
+        val importer = SnapshotImporter(database, BackupCrypto(10_000))
+        val documents = FakeDocuments().apply { readBytes = importer.encode(SnapshotExporter(database).export(), "password9".toCharArray()) }
+        val recovery = object : com.hisabnikash.app.backup.RestoreRecoveryStore {
+            override suspend fun save(password: CharArray) { capturedWithinTransaction = database.inTransaction() }
+            override suspend fun restore(password: CharArray) = RestoreResult.Success
+            override fun exists() = true
+            override fun clear() = Unit
+        }
+        val store = LocalBackupStore(documents, FakePreferences(), SnapshotExporter(database), importer, FakeSecrets(), recovery)
+
+        assertEquals(RestoreResult.Success, store.restoreFromDocument(Uri.parse("content://fixture"), "password9".toCharArray()))
+        assertTrue("ledger writes must not interleave between recovery capture and replacement", capturedWithinTransaction)
+    }
+
+    @Test fun `successful disable clears secret even when timestamp cleanup fails`() = runTest {
+        val preferences = object : LocalBackupPreferences {
+            override val state = MutableStateFlow(UserPreferenceState(localBackupEnabled = true))
+            override suspend fun setLocalBackup(enabled: Boolean, uri: String?) { state.value = state.value.copy(localBackupEnabled = enabled) }
+            override suspend fun setLastLocalBackupAt(epochMillis: Long?) { error("fixture preference failure") }
+        }
+        val secrets = FakeSecrets().apply { save("password9".toCharArray()) }
+        val store = LocalBackupStore(FakeDocuments(), preferences, SnapshotExporter(database), SnapshotImporter(database), secrets)
+        assertTrue(runCatching { store.disable() }.isFailure)
+        assertFalse(preferences.state.value.localBackupEnabled)
+        assertEquals(null, secrets.password)
+    }
+
+    @Test fun `queued backup reads neither secret nor data after an earlier disable wins the gate`() = runTest {
+        val gate = com.hisabnikash.app.backup.BackupOperationGate()
+        val release = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val holder = async(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) { gate.run { release.await() } }
+        var loads = 0
+        var writes = 0
+        val secrets = object : BackupPasswordCache {
+            override fun load(): CharArray { loads++; return "password9".toCharArray() }
+            override fun save(password: CharArray) = Unit
+            override fun clear() = Unit
+        }
+        val documents = object : LocalDocumentAccess {
+            override fun persistTreeAccess(uri: Uri) = true
+            override fun writeAtomically(treeUri: Uri, fileName: String, bytes: ByteArray) { writes++ }
+            override fun read(uri: Uri) = byteArrayOf()
+        }
+        val preferences = FakePreferences(UserPreferenceState(localBackupEnabled = true, localBackupUri = "content://fixture"))
+        val store = LocalBackupStore(documents, preferences, SnapshotExporter(database), SnapshotImporter(database), secrets, operationGate = gate)
+        val disable = async(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) { store.disable() }
+        val queued = async(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) { store.backUpQueued() }
+        assertEquals(0, loads)
+        release.complete(Unit)
+        holder.await(); disable.await(); queued.await()
+        assertEquals(0, loads)
+        assertEquals(0, writes)
+    }
+
     private fun store(documents: FakeDocuments, preferences: FakePreferences, secrets: FakeSecrets) = LocalBackupStore(
         documentAccess = documents,
         preferences = preferences,

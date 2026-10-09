@@ -5,6 +5,7 @@ import com.hisabnikash.app.domain.DashboardSummary
 
 data class DashboardState(
     val summary: DashboardSummary,
+    val categories: Map<String, com.hisabnikash.app.core.model.Category> = emptyMap(),
 )
 
 internal fun emptyDashboardSummary(month: MonthKey) = DashboardSummary(
