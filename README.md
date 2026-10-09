@@ -9,6 +9,10 @@ Bangla-first, offline-first personal income and expense tracking for Android. Th
 3. Because this is a debug-signed closed-test build, do not distribute it as a production Play Store release.
 4. For Google Drive testing, register package `com.hisabnikash.app` and the test signing certificate in a Google Cloud OAuth client before connecting Drive.
 
+Selecting a folder or connecting Drive is only setup: use **Back up now** with a password to create the first encrypted copy. Settings distinguishes incomplete setup from a successfully configured backup. Keep the password somewhere safe; this app cannot recover a forgotten one.
+
+A future owner-signed release may use a different certificate from this debug build. Android will not accept it as an in-place update. Verify an external backup and its restore/password before uninstalling, then restore after installing the owner-signed build; never uninstall unbacked-up real data.
+
 Build locally with Android Studio's bundled JDK:
 
 ```powershell

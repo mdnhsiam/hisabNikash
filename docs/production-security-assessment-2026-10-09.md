@@ -1,6 +1,6 @@
 # HisabNikash production security assessment
 
-Assessment started 2026-10-09, refreshed 2026-10-10 (Asia/Dhaka). Scope: the private, closed-distribution Android application, its resolved release runtime dependencies, and a manual CI workflow. Verified application source is `a00157d8465dc9061809cb5e34f8fe31f3c370ae`. Clean JVM/lint/build gates passed; device/OAuth/signing gates remain open. This assessment does not declare the app production ready or authorize public distribution.
+Assessment started 2026-10-09, refreshed 2026-10-10 (Asia/Dhaka). Scope: the private, closed-distribution Android application, its resolved release runtime dependencies, and a manual CI workflow. Verified application source is `14bdfb8e911a0422cd48f72a5bea7f37e2433674`. Clean JVM/lint/build gates passed; device/OAuth/signing gates remain open. This assessment does not declare the app production ready or authorize public distribution.
 
 ## Runtime dependency and advisory evidence
 
@@ -38,6 +38,7 @@ Observed boundaries:
 - New backups use 600,000 PBKDF2-HMAC-SHA256 iterations; older authenticated v1 snapshots retain their recorded derivation count (10,000–1,000,000) for compatibility. Constructor/import bounds prevent creating an envelope the app cannot decrypt and bound expensive derivation. The new default follows the SHA256 work-factor recommendation in [OWASP password-storage guidance](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html); it is not a backup-security certification. A long unique passphrase and minimum-device performance testing remain necessary.
 - Google authorization requests only `drive.appdata`. Access tokens are passed in memory to HTTPS requests and are not persisted by the app's source. The selected folder flow uses Android's Storage Access Framework.
 - Release shrinking/minification is enabled. A successful unsigned release build is a compilation/minification gate, not proof of owner-controlled release signing or device behavior.
+- Local-data deletion cancels recurring work and app notifications; worker lookup/posting now uses the shared deletion boundary. Backup readiness is separate from destination/account selection and is persisted only after a successful encrypted write. These final-review repairs have failing-then-passing regressions, not physical-device certification.
 
 The corrected modern cloud/device-transfer rules and legacy backup rules explicitly exclude all nine Android domains, including database, files, preferences, external and device-protected storage. Android documents that `allowBackup=false` can leave manufacturer-specific device transfers enabled, so declared exclusions do not replace real-device checks. [Android backup and extraction rules](https://developer.android.com/identity/data/autobackup)
 
@@ -66,13 +67,13 @@ This private repository's standard hosted jobs consume the owner's included allo
 
 | Gate | Required evidence | Current status |
 | --- | --- | --- |
-| Final hardening validation | Fresh whole-suite results, lint, minified build, and both emulator runs against the final change set | 141 JVM tests and both lint/build gates passed; instrumentation compiled but no device; hosted CI not run |
+| Final hardening validation | Fresh whole-suite results, lint, minified build, and both emulator runs against the final change set | 151 JVM tests and both lint/build gates passed; instrumentation compiled but no device; hosted CI not run |
 | Minimum OS crypto | API 24/25 encrypted round trip, wrong-password rejection, and cross-version compatibility of existing backups | Format-compatible fallback implemented; vectors/Unicode parity and Robolectric checks passed; actual Android execution required |
 | Backup/restore lifecycle | All backup/import/delete/worker operations share the intended serialization boundary; restore failure retains the ledger; platform extraction exclusions verified | Focused57-test backup/settings GREEN plus full suite; physical-device checks outstanding |
 | Owner-controlled signing | Release keystore, backed-up key/recovery procedure, signed APK signature verification, clean install/update test, and SHA-256 distribution record | Owner signing material and signed candidate absent |
 | Google OAuth/Drive | Registered Android package and signing-certificate client, consent/test users, real sign-in/denial/revocation/reconnect, upload and clean-device restore | Owner setup/test account absent; fake transport tests are insufficient |
 | Device behavior | Physical minimum/current OS, process death, reboot/background backup/reminders, denied permissions, Bangla/English layouts, large ledger, uninstall/reinstall/folder and Drive restore | Physical-device evidence absent |
 | Private release access and cost | Explicit approved recipients/distribution path; free allowance plus stopped overage verified before any CI dispatch | No publication or billing action performed |
-| Privacy and security claims | Docs match final manifest/storage/extraction behavior and clearly distinguish encrypted backups from local database protection | Final review required after hardening |
+| Privacy and security claims | Docs match final manifest/storage/extraction behavior and clearly distinguish encrypted backups from local database protection | Fresh review completed; four Important issues repaired and final151-test suite green. No certification/penetration-test claim |
 
 Both the older 0.1.0 alpha asset and the current locally built 0.1.1 candidate are test artifacts. Missing owner OAuth configuration, release signing, device checks, or execution evidence remain incomplete release gates. See the [exact candidate/checksum report](testing/release-test-report.md).

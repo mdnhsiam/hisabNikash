@@ -74,9 +74,9 @@
 - [x] Attempt Android instrumentation/UI gate; record unavailable runtime (`No connected devices!`, software emulator could not boot), not a pass.
 - [x] Add least-privilege CI using pinned official actions and an Android emulator gate; statically validated. Hosted execution remains owner-gated by free allowance/no-overage verification.
 - [x] Inspect final APK manifest/debuggability/permissions, dependency inventory and source secret/log scan.
-- [ ] Obtain one fresh whole-diff review; fix Important/Critical findings with RED→GREEN regressions and a green suite.
-- [ ] Update readiness/security evidence, manual checklist and installation instructions; commit and push normal non-force changes when verification is green.
-- [ ] Publish a new private pre-release candidate only; do not relabel an unverified build production-ready.
+- [x] Obtain one fresh whole-diff review; fix Important/Critical findings with RED→GREEN regressions and a green suite (four Important findings repaired, final151 tests).
+- [x] Update readiness/security evidence, manual checklist and installation instructions. The user has authorized a normal, non-force source push after green verification.
+- [ ] Publish a new private pre-release candidate only; do not relabel an unverified build production-ready. Blocked: browser runtime cannot initialize and the connected GitHub tools have no release-asset upload method. The rebuilt candidate is available locally; the older alpha.1 asset is not current.
 
 ## Gate commands
 
