@@ -35,10 +35,10 @@
 
 **Interfaces:** Consumes the existing Room tables/models. Produces validated repository writes and `RestoreValidator.validate(snapshot): ValidatedRestore` with cross-record checks; retain backup format compatibility.
 
-- [ ] Write regression tests for category/type mismatch, unbounded imported money, invalid budget keys/slots, orphan/duplicate reversals, SQL metacharacters preserved as data, and full-table restore rollback.
-- [ ] Run the tests before fixes; inspect individual assertion failures rather than compilation errors.
-- [ ] Enforce model and category validity at repository and restore boundaries; use overflow-safe percentages and prevent aggregate overflow in restored data. Keep historical archived category labels.
-- [ ] Exercise Room migrations on actual SQLite, including v1→v3 and v2→v3 and Bengali budget-key normalization.
+- [x] Write regression tests for category/type mismatch, unbounded imported money, invalid budget keys/slots, orphan/duplicate reversals, SQL metacharacters preserved as data, and full-table restore rollback.
+- [x] Run the tests before fixes; inspect individual assertion failures rather than compilation errors.
+- [x] Enforce model and category validity at repository and restore boundaries; use overflow-safe percentages and prevent aggregate overflow in restored data. Keep historical archived category labels.
+- [x] Exercise Room migrations on actual SQLite, including v1→v3 and v2→v3 and Bengali budget-key normalization.
 - [x] Run the complete JVM suite and commit the independently testable repairs (98 tests, zero failures).
 
 ## Task 2: Reliable finance and entry/reminder UI
@@ -47,11 +47,11 @@
 
 **Interfaces:** Carry displayed `nextDueAtEpochMillis` from recurring screen/notification through repository confirmation and skip; return explicit action success/failure. Observe an injectable current-month flow across dashboard/budget/savings. Separate lifetime savings available for goals from automatic monthly savings.
 
-- [ ] Write failing tests for stale confirmation/skip, safe failures, month rollover without a transaction emission, and monthly-vs-lifetime savings.
-- [ ] Run RED; implement the smallest fixes and keep totals driven by persisted data.
-- [ ] Write Compose regressions for failed-edit retention, changing type requiring an applicable category, optional field/date entry, complete recurring review and visible optional-form errors.
-- [ ] Run RED; make long dialogs scrollable, disable duplicate submissions, preserve drafts on failure, and localize actionable messages.
-- [ ] Run the complete JVM suite and instrumentation compilation, then commit.
+- [x] Write failing tests for stale confirmation/skip, safe failures, month rollover without a transaction emission, and monthly-vs-lifetime savings.
+- [x] Run RED; implement the smallest fixes and keep totals driven by persisted data.
+- [x] Write Compose regressions for failed-edit retention, changing type requiring an applicable category, optional field/date entry, complete recurring review and visible optional-form errors.
+- [x] Run RED; make long dialogs scrollable, disable duplicate submissions, preserve drafts on failure, and localize actionable messages.
+- [x] Run the complete JVM suite and instrumentation compilation, then commit (a00157d; final clean141 tests).
 
 ## Task 3: Backup lifecycle and platform security
 
@@ -59,10 +59,10 @@
 
 **Interfaces:** A shared suspend operation gate serializes backup/restore/disable/delete across local and Drive services. Obtain authorization for each manual Drive operation; no indefinitely reused in-memory token. SAF replacement preserves a recoverable previous snapshot until new-file promotion succeeds.
 
-- [ ] Write deterministic concurrent-operation regressions and failed-provider replacement tests; run RED.
-- [ ] Serialize backup lifecycle changes, fix stale-token behavior and retain secrets only while their destination is enabled.
-- [ ] Validate private Android extraction exclusions for every data domain and privacy-safe notifications/intents.
-- [ ] Run wrong-password/tamper/oversized-input/storage/network/auth tests, full suite and lint; commit.
+- [x] Write deterministic concurrent-operation regressions and failed-provider replacement tests; run RED.
+- [x] Serialize backup lifecycle changes, fix stale-token behavior and retain secrets only while their destination is enabled.
+- [x] Validate private Android extraction exclusions for every data domain and privacy-safe notifications/intents.
+- [x] Run wrong-password/tamper/oversized-input/storage/network/auth tests, full suite and lint; commit (a00157d). Real Android/provider/account gates remain open.
 
 ## Task 4: Reproducible release gates and handoff
 
@@ -70,10 +70,10 @@
 
 **Interfaces:** CI consumes the checked-in wrapper/schema files and outputs test/lint evidence and unsigned release candidates. Production signing/OAuth configuration comes from the owner, never a committed secret.
 
-- [ ] Run fresh clean JVM tests, lint, instrumentation compilation, debug and minified release builds.
-- [ ] Run Android instrumentation/UI tests on an available emulator or connected device; if unavailable, record the exact limitation, not a pass.
-- [ ] Add least-privilege CI using pinned official actions and an Android emulator gate; verify its real execution when GitHub permissions allow.
-- [ ] Inspect final APK manifest/debuggability/permissions, dependency inventory and source secret/log scan.
+- [x] Run fresh clean JVM tests, lint, instrumentation compilation, debug and minified release builds.
+- [x] Attempt Android instrumentation/UI gate; record unavailable runtime (`No connected devices!`, software emulator could not boot), not a pass.
+- [x] Add least-privilege CI using pinned official actions and an Android emulator gate; statically validated. Hosted execution remains owner-gated by free allowance/no-overage verification.
+- [x] Inspect final APK manifest/debuggability/permissions, dependency inventory and source secret/log scan.
 - [ ] Obtain one fresh whole-diff review; fix Important/Critical findings with RED→GREEN regressions and a green suite.
 - [ ] Update readiness/security evidence, manual checklist and installation instructions; commit and push normal non-force changes when verification is green.
 - [ ] Publish a new private pre-release candidate only; do not relabel an unverified build production-ready.

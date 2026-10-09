@@ -1,4 +1,4 @@
-# Hisab
+# HisabNikash
 
 Bangla-first, offline-first personal income and expense tracking for Android. The first release includes quick entry, Cash/Bank/bKash/Nagad payment methods, custom categories, monthly dashboard/reports, optional budgets and savings goals, recurring reminders, encrypted phone-folder backup, and opt-in user-owned Google Drive backup.
 
@@ -15,8 +15,17 @@ Build locally with Android Studio's bundled JDK:
 .\gradlew.bat --no-daemon '-Dorg.gradle.java.home=C:\Program Files\Android\Android Studio\jbr' clean testDebugUnitTest lintDebug assembleDebug
 ```
 
-The final APK SHA-256 is recorded below after the release build:
+See the dated [release test report](docs/testing/release-test-report.md) for the candidate version, checksum and executed checks. The older `v0.1.0-alpha.1` GitHub prerelease is not the current hardened candidate.
 
-`5e96ce61e54cd4033c15d217f529ebb29092ae00f15723a368a97891e78d8206`
+See [production readiness](docs/production-readiness-2026-10-09.md), [manual-release-checklist.md](docs/testing/manual-release-checklist.md), and [data-handling.md](docs/privacy/data-handling.md). Real-device restore, Google authorization and owner-controlled release signing are required before production sign-off; a passing build does not establish those results.
 
-See [manual-release-checklist.md](docs/testing/manual-release-checklist.md) for device checks and [data-handling.md](docs/privacy/data-handling.md) for privacy/security details.
+## Release verification
+
+```powershell
+$env:GRADLE_USER_HOME='C:\Users\user\.gradle'
+.\gradlew.bat --no-daemon '-Dorg.gradle.java.home=C:\Program Files\Android\Android Studio\jbr' clean testDebugUnitTest lintDebug lintRelease compileDebugAndroidTestKotlin assembleDebug assembleRelease
+```
+
+`connectedDebugAndroidTest` additionally requires a booted Android device/emulator. The manual GitHub workflow runs these gates and API 24/36 instrumentation only after the owner confirms free Actions allowance and stopped paid overage. It has no automatic trigger and does not publish or sign an APK.
+
+This native Android app does not need web hosting. Core use is offline and free; optional Drive backup uses each user's own Google account and available storage, not developer-operated servers. Drive backup is a snapshot/restore feature, not live multi-device sync.

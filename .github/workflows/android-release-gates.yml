@@ -1,0 +1,121 @@
+name: Android release gates
+
+# Manual while this private repository must stay within the owner's free allowance.
+# Verify account remaining minutes and a stop-usage spending budget before opting in.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_free_allowance:
+        description: 'I verified included Actions minutes and a no-overage spending limit'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    if: ${{ inputs.confirm_free_allowance }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '17'
+          overwrite-settings: false
+      - name: Install Android compile SDK
+        run: |
+          test -n "$ANDROID_HOME"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
+      - name: JVM tests, lint, debug and minified release
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --console=plain :app:testDebugUnitTest :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease :app:compileDebugAndroidTestKotlin
+      - name: Resolve runtime artifacts and check public advisories
+        run: |
+          ./gradlew --no-daemon --console=plain --init-script scripts/runtime-inventory.init.gradle :app:writeReleaseRuntimeInventory
+          python3 scripts/check-runtime-advisories.py app/build/reports/dependencies/release-runtime.json app/build/reports/dependencies/osv-runtime.json
+      - name: Summarize gates without storing APKs or artifacts
+        if: always()
+        run: |
+          printf 'Build and runtime advisory gate: %s\n' '${{ job.status }}' >> "$GITHUB_STEP_SUMMARY"
+          printf 'The release APK is unsigned. Device, OAuth and release-signing gates remain owner checks.\n' >> "$GITHUB_STEP_SUMMARY"
+
+  instrumentation:
+    if: ${{ inputs.confirm_free_allowance }}
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        api: [24, 36]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '17'
+          overwrite-settings: false
+      - name: Install API ${{ matrix.api }} emulator image
+        env:
+          API_LEVEL: ${{ matrix.api }}
+          # Step-level runner context keeps avdmanager/emulator paths consistent.
+          ANDROID_USER_HOME: ${{ runner.temp }}/android-user
+          ANDROID_AVD_HOME: ${{ runner.temp }}/android-avd
+        run: |
+          SDK_TOOLS="$ANDROID_HOME/cmdline-tools/latest/bin"
+          "$SDK_TOOLS/sdkmanager" --install "platforms;android-36" "build-tools;36.0.0" "platform-tools" "emulator" "system-images;android-${API_LEVEL};google_apis;x86_64"
+          mkdir -p "$ANDROID_USER_HOME" "$ANDROID_AVD_HOME"
+          printf 'no\n' | "$SDK_TOOLS/avdmanager" create avd --name release-gate --package "system-images;android-${API_LEVEL};google_apis;x86_64"
+          test -e /dev/kvm
+          sudo chmod 666 /dev/kvm
+          "$ANDROID_HOME/emulator/emulator" -accel-check
+      - name: Boot emulator and run instrumentation
+        timeout-minutes: 24
+        env:
+          ANDROID_USER_HOME: ${{ runner.temp }}/android-user
+          ANDROID_AVD_HOME: ${{ runner.temp }}/android-avd
+        run: |
+          ADB="$ANDROID_HOME/platform-tools/adb"
+          trap '"$ADB" emu kill || true' EXIT
+          "$ANDROID_HOME/emulator/emulator" -avd release-gate -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader > "$RUNNER_TEMP/emulator.log" 2>&1 &
+          timeout 120 "$ADB" wait-for-device
+          booted=false
+          for attempt in $(seq 1 120); do
+            if [[ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
+              booted=true
+              break
+            fi
+            sleep 5
+          done
+          if [[ "$booted" != true ]]; then
+            tail -100 "$RUNNER_TEMP/emulator.log"
+            exit 1
+          fi
+          "$ADB" shell settings put global window_animation_scale 0
+          "$ADB" shell settings put global transition_animation_scale 0
+          "$ADB" shell settings put global animator_duration_scale 0
+          "$ADB" shell input keyevent 82
+          chmod +x gradlew
+          timeout 20m ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest
+      - name: Summarize API result
+        if: always()
+        run: |
+          printf 'API %s instrumentation gate: %s\n' '${{ matrix.api }}' '${{ job.status }}' >> "$GITHUB_STEP_SUMMARY"

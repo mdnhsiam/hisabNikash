@@ -1,0 +1,33 @@
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+
+// Standalone init script: do not change the application's Gradle configuration.
+gradle.projectsEvaluated {
+    def app = gradle.rootProject.findProject(':app')
+    if (app == null) throw new GradleException('Android :app project missing')
+    app.tasks.register('writeReleaseRuntimeInventory') {
+        group = 'verification'
+        description = 'Write selected release runtime Maven artifact coordinates for advisory checks.'
+        doLast {
+            def configuration = app.configurations.getByName('releaseRuntimeClasspath')
+            def packages = configuration.incoming.artifacts.artifacts.collect { artifact ->
+                def module = artifact.id.componentIdentifier
+                if (!(module instanceof ModuleComponentIdentifier)) {
+                    throw new GradleException("Non-Maven runtime artifact requires manual inventory: ${module}")
+                }
+                [ecosystem: 'Maven', name: "${module.group}:${module.module}".toString(), version: module.version]
+            }.unique { "${it.name}:${it.version}" }.sort { a, b ->
+                "${a.name}:${a.version}" <=> "${b.name}:${b.version}"
+            }
+            if (packages.isEmpty()) throw new GradleException('Empty runtime inventory')
+            def destination = app.layout.buildDirectory.file('reports/dependencies/release-runtime.json').get().asFile
+            destination.parentFile.mkdirs()
+            destination.setText(JsonOutput.prettyPrint(JsonOutput.toJson([
+                configuration: 'releaseRuntimeClasspath',
+                source: 'Gradle resolved runtime artifacts (excludes constraint-only BOM entries)',
+                packages: packages,
+            ])) + '\n', 'UTF-8')
+            logger.lifecycle("Resolved ${packages.size()} release runtime packages: ${destination}")
+        }
+    }
+}
