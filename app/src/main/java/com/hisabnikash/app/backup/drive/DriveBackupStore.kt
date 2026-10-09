@@ -27,6 +27,7 @@ class DriveBackupStore(
     private val isEnabled: suspend () -> Boolean = { true },
     private val setEnabled: suspend (Boolean) -> Unit = {},
     private val passwordCache: BackupPasswordCache? = null,
+    private val setBackupReady: suspend (Boolean) -> Unit = {},
 ) {
     private val mutableStatus = MutableStateFlow<BackupStatus>(BackupStatus.Idle)
     val status: StateFlow<BackupStatus> = mutableStatus
@@ -43,6 +44,7 @@ class DriveBackupStore(
         operationGate.invalidateAuthorization()
         setEnabled(false)
         passwordCache?.clear()
+        setBackupReady(false)
         mutableStatus.value = BackupStatus.Idle
         revoke()
     }
@@ -54,7 +56,10 @@ class DriveBackupStore(
 
     suspend fun backUpQueued(authorize: suspend () -> String?) = operationGate.run {
         if (!isEnabled()) return@run
-        val password = passwordCache?.load() ?: throw DriveReauthorizationRequired()
+        val password = passwordCache?.load() ?: run {
+            setBackupReady(false)
+            throw DriveReauthorizationRequired()
+        }
         try {
             val token = authorize() ?: throw DriveReauthorizationRequired()
             writeBackup(token, password)
@@ -69,6 +74,7 @@ class DriveBackupStore(
             encrypted = envelope
             remote.uploadLatest(accessToken, envelope)
             passwordCache?.save(password)
+            setBackupReady(true)
             mutableStatus.value = BackupStatus.Succeeded(nowEpochMillis())
         } catch (error: Throwable) {
             mutableStatus.value = BackupStatus.Failed(DriveBackupWorkerPolicy.shouldRetry(error))

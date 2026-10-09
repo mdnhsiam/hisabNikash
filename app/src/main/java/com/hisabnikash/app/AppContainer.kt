@@ -76,6 +76,7 @@ class AppContainer(
             isEnabled = { userPreferences.state.first().driveBackupEnabled },
             setEnabled = userPreferences::setDriveBackupEnabled,
             passwordCache = driveBackupPasswordCache,
+            setBackupReady = userPreferences::setDriveBackupReady,
         )
     }
     val dataDeletionUseCase: DataDeletionUseCase by lazy {
@@ -92,6 +93,10 @@ class AppContainer(
                 localBackupPasswordCache.clear()
                 driveBackupPasswordCache.clear()
                 preRestoreBackupStore.clear()
+            },
+            clearReminderState = {
+                recurringRepository.observeAll().first().forEach { recurringScheduler.cancel(it.id) }
+                com.hisabnikash.app.feature.recurring.NotificationFactory(applicationContext).cancelAll()
             },
             inTransaction = { operation -> database.withTransaction { operation() } },
             operationGate = backupOperationGate,

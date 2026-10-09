@@ -22,15 +22,17 @@ class RecurringWorker(
     override suspend fun doWork(): Result {
         val recurringId = inputData.getString(KEY_RECURRING_ID) ?: return Result.failure()
         val container = (applicationContext as HisabApplication).container
-        val item = container.recurringRepository.find(recurringId) ?: return Result.success()
-        val permissionGranted = Build.VERSION.SDK_INT < 33 ||
-            ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        return when (RecurringWorkerPolicy.decide(permissionGranted, item.isEnabled, item.nextDueAtEpochMillis <= System.currentTimeMillis())) {
-            RecurringWorkerDecision.POST_REMINDER -> {
-                NotificationFactory(applicationContext).show(item)
-                Result.success()
+        return container.backupOperationGate.run {
+            val item = container.recurringRepository.find(recurringId) ?: return@run Result.success()
+            val permissionGranted = Build.VERSION.SDK_INT < 33 ||
+                ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            when (RecurringWorkerPolicy.decide(permissionGranted, item.isEnabled, item.nextDueAtEpochMillis <= System.currentTimeMillis())) {
+                RecurringWorkerDecision.POST_REMINDER -> {
+                    NotificationFactory(applicationContext).show(item)
+                    Result.success()
+                }
+                RecurringWorkerDecision.NO_OP -> Result.success()
             }
-            RecurringWorkerDecision.NO_OP -> Result.success()
         }
     }
 

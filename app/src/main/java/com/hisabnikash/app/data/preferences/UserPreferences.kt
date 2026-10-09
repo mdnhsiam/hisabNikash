@@ -20,6 +20,7 @@ interface LocalBackupPreferences {
     val state: Flow<UserPreferenceState>
     suspend fun setLocalBackup(enabled: Boolean, uri: String?)
     suspend fun setLastLocalBackupAt(epochMillis: Long?)
+    suspend fun setLocalBackupReady(ready: Boolean)
 }
 
 enum class AppLanguage(val tag: String) {
@@ -35,6 +36,8 @@ data class UserPreferenceState(
     val localBackupUri: String? = null,
     val driveBackupEnabled: Boolean = false,
     val lastLocalBackupAtEpochMillis: Long? = null,
+    val localBackupReady: Boolean = false,
+    val driveBackupReady: Boolean = false,
 )
 
 private val Context.hisabPreferencesDataStore by preferencesDataStore(name = UserPreferences.FILE_NAME)
@@ -56,6 +59,8 @@ class UserPreferences private constructor(
                 localBackupUri = preferences[LOCAL_BACKUP_URI],
                 driveBackupEnabled = preferences[DRIVE_BACKUP_ENABLED] ?: false,
                 lastLocalBackupAtEpochMillis = preferences[LAST_LOCAL_BACKUP_AT],
+                localBackupReady = preferences[LOCAL_BACKUP_READY] ?: false,
+                driveBackupReady = preferences[DRIVE_BACKUP_READY] ?: false,
             )
         }
 
@@ -73,9 +78,21 @@ class UserPreferences private constructor(
 
     override suspend fun setLocalBackup(enabled: Boolean, uri: String?) {
         dataStore.edit { preferences ->
+            if (!enabled || preferences[LOCAL_BACKUP_URI] != uri) {
+                preferences[LOCAL_BACKUP_READY] = false
+                preferences.remove(LAST_LOCAL_BACKUP_AT)
+            }
             preferences[LOCAL_BACKUP_ENABLED] = enabled
             if (uri == null) preferences.remove(LOCAL_BACKUP_URI) else preferences[LOCAL_BACKUP_URI] = uri
         }
+    }
+
+    override suspend fun setLocalBackupReady(ready: Boolean) {
+        dataStore.edit { it[LOCAL_BACKUP_READY] = ready }
+    }
+
+    suspend fun setDriveBackupReady(ready: Boolean) {
+        dataStore.edit { it[DRIVE_BACKUP_READY] = ready }
     }
 
     override suspend fun setLastLocalBackupAt(epochMillis: Long?) {
@@ -85,7 +102,7 @@ class UserPreferences private constructor(
     }
 
     suspend fun setDriveBackupEnabled(enabled: Boolean) {
-        dataStore.edit { it[DRIVE_BACKUP_ENABLED] = enabled }
+        dataStore.edit { it[DRIVE_BACKUP_ENABLED] = enabled; if (!enabled) it[DRIVE_BACKUP_READY] = false }
     }
 
     suspend fun clearPrivateState() {
@@ -96,6 +113,8 @@ class UserPreferences private constructor(
             preferences.remove(LOCAL_BACKUP_URI)
             preferences.remove(DRIVE_BACKUP_ENABLED)
             preferences.remove(LAST_LOCAL_BACKUP_AT)
+            preferences.remove(LOCAL_BACKUP_READY)
+            preferences.remove(DRIVE_BACKUP_READY)
         }
     }
 
@@ -109,6 +128,8 @@ class UserPreferences private constructor(
         private val LAST_PAYMENT_METHOD = stringPreferencesKey("last_payment_method")
         private val GUEST_WARNING_DISMISSED = booleanPreferencesKey("guest_warning_dismissed")
         private val LOCAL_BACKUP_ENABLED = booleanPreferencesKey("local_backup_enabled")
+        private val LOCAL_BACKUP_READY = booleanPreferencesKey("local_backup_ready")
+        private val DRIVE_BACKUP_READY = booleanPreferencesKey("drive_backup_ready")
         private val LOCAL_BACKUP_URI = stringPreferencesKey("local_backup_uri")
         private val DRIVE_BACKUP_ENABLED = booleanPreferencesKey("drive_backup_enabled")
         private val LAST_LOCAL_BACKUP_AT = androidx.datastore.preferences.core.longPreferencesKey("last_local_backup_at")

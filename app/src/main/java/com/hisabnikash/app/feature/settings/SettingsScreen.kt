@@ -23,6 +23,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -52,7 +55,7 @@ fun SettingsScreen(
     showUndoRestore: Boolean,
     onUndoRestore: (CharArray) -> Unit,
     categories: List<Category>,
-    onRenameCategory: (Category, String) -> Unit,
+    onRenameCategory: suspend (Category, String) -> Boolean,
     onArchiveCategory: (Category) -> Unit,
     modifier: Modifier = Modifier,
     recurringContent: @Composable () -> Unit = {},
@@ -65,6 +68,7 @@ fun SettingsScreen(
     var drivePasswordAction by remember { mutableStateOf<DrivePasswordAction?>(null) }
     var drivePassword by remember { mutableStateOf("") }
     var editingCategory by remember { mutableStateOf<Category?>(null) }
+    val scope = rememberCoroutineScope()
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
         Text(stringResource(R.string.language), style = MaterialTheme.typography.titleMedium)
@@ -88,7 +92,9 @@ fun SettingsScreen(
             }
         }
 
-        if (!state.localBackupEnabled && !state.driveBackupEnabled && !state.guestWarningDismissed) {
+        val localReady = state.localBackupEnabled && state.localBackupReady
+        val driveReady = state.driveBackupEnabled && state.driveBackupReady
+        if (!localReady && !driveReady && !state.guestWarningDismissed) {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.guest_data_warning), style = MaterialTheme.typography.bodyMedium)
@@ -100,7 +106,7 @@ fun SettingsScreen(
         Text(stringResource(R.string.backup_title), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.local_backup_risk), color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (state.localBackupEnabled) {
-            Text(stringResource(R.string.local_backup_enabled))
+            Text(stringResource(if (localReady) R.string.local_backup_enabled else R.string.local_backup_setup_required))
             state.lastLocalBackupAtEpochMillis?.let { Text(stringResource(R.string.last_backup_time, java.text.DateFormat.getDateTimeInstance().format(java.util.Date(it)))) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { showBackupPassword = true }) { Text(stringResource(R.string.back_up_now)) }
@@ -117,6 +123,7 @@ fun SettingsScreen(
         Text(stringResource(R.string.drive_backup_title), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.drive_backup_explanation), color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (state.driveBackupEnabled) {
+            Text(stringResource(if (driveReady) R.string.drive_backup_ready else R.string.drive_backup_setup_required))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { drivePasswordAction = DrivePasswordAction.BACKUP }) {
                     Text(stringResource(R.string.drive_back_up_now))
@@ -223,12 +230,28 @@ fun SettingsScreen(
 
     editingCategory?.let { category ->
         var name by remember(category.id) { mutableStateOf(category.nameBn.ifBlank { category.nameEn }) }
+        var renaming by remember(category.id) { mutableStateOf(false) }
+        var renameFailed by remember(category.id) { mutableStateOf(false) }
         AlertDialog(
-            onDismissRequest = { editingCategory = null },
+            onDismissRequest = { if (!renaming) editingCategory = null },
             title = { Text(stringResource(R.string.rename_category)) },
-            text = { OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.category)) }) },
-            confirmButton = { Button(onClick = { onRenameCategory(category, name); editingCategory = null }, enabled = name.isNotBlank()) { Text(stringResource(R.string.save)) } },
-            dismissButton = { TextButton(onClick = { editingCategory = null }) { Text(stringResource(R.string.cancel)) } },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    OutlinedTextField(name, { name = it; renameFailed = false }, enabled = !renaming, label = { Text(stringResource(R.string.category)) })
+                    if (renameFailed) Text(stringResource(R.string.operation_failed), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            confirmButton = { Button(onClick = {
+                if (!renaming) scope.launch {
+                    renaming = true
+                    try {
+                        if (onRenameCategory(category, name)) editingCategory = null else renameFailed = true
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { renameFailed = true }
+                    finally { renaming = false }
+                }
+            }, enabled = name.isNotBlank() && !renaming) { Text(stringResource(if (renaming) R.string.saving else R.string.save)) } },
+            dismissButton = { TextButton(onClick = { editingCategory = null }, enabled = !renaming) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }

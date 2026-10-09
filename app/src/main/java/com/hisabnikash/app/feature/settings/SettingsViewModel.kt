@@ -198,9 +198,13 @@ class SettingsViewModel(
 
     fun hasRestoreRecovery(): Boolean = recoveryStore.exists()
 
-    fun renameCategory(category: Category, name: String) {
-        if (name.isBlank() || category.isSystem) return
-        launchOperation { categoryRepository.update(category.copy(nameEn = name.trim(), nameBn = name.trim())) }
+    suspend fun renameCategory(category: Category, name: String): Boolean {
+        if (name.isBlank() || category.isSystem) return false
+        return try {
+            categoryRepository.update(category.copy(nameEn = name.trim(), nameBn = name.trim()))
+            true
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { mutableBackupMessage.value = R.string.operation_failed; false }
     }
 
     fun archiveCategory(category: Category) {

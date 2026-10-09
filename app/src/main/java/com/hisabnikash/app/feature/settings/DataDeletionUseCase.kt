@@ -7,6 +7,7 @@ class DataDeletionUseCase(
     private val repositories: List<ClearableRepository>,
     private val inTransaction: suspend (suspend () -> Unit) -> Unit = { operation -> operation() },
     private val operationGate: BackupOperationGate = BackupOperationGate(),
+    private val clearReminderState: suspend () -> Unit = {},
     private val clearPrivatePreferences: suspend () -> Unit,
 ) {
     suspend fun deleteAllLocalData(confirmed: Boolean): Boolean = operationGate.run {
@@ -14,6 +15,7 @@ class DataDeletionUseCase(
         operationGate.invalidateAuthorization()
         // Disable backup and clear secrets before repository callbacks can enqueue work.
         clearPrivatePreferences()
+        clearReminderState()
         inTransaction {
             repositories.forEach { it.clearAll() }
         }

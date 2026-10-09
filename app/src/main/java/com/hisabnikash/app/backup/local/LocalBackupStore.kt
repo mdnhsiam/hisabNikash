@@ -23,13 +23,20 @@ class LocalBackupStore(
 ) {
     suspend fun chooseBackupLocation(uri: Uri) = operationGate.run {
         if (!documentAccess.persistTreeAccess(uri)) throw BackupLocationUnavailableException()
+        val changed = preferences.state.first().localBackupUri != uri.toString()
         preferences.setLocalBackup(enabled = true, uri = uri.toString())
+        if (changed) {
+            passwordCache.clear()
+            preferences.setLocalBackupReady(false)
+            preferences.setLastLocalBackupAt(null)
+        }
     }
 
     suspend fun disable() = operationGate.run {
         operationGate.invalidateAuthorization()
         preferences.setLocalBackup(enabled = false, uri = null)
         passwordCache.clear()
+        preferences.setLocalBackupReady(false)
         preferences.setLastLocalBackupAt(null)
     }
 
@@ -37,7 +44,11 @@ class LocalBackupStore(
 
     suspend fun backUpQueued() = operationGate.run {
         if (!preferences.state.first().localBackupEnabled) return@run
-        val password = passwordCache.load() ?: return@run
+        val password = passwordCache.load()
+        if (password == null) {
+            preferences.setLocalBackupReady(false)
+            return@run
+        }
         try { writeBackup(password) } finally { password.fill('\u0000') }
     }
 
@@ -50,6 +61,7 @@ class LocalBackupStore(
             documentAccess.writeAtomically(tree, FILE_NAME, encrypted)
             passwordCache.save(password)
             preferences.setLastLocalBackupAt(nowEpochMillis())
+            preferences.setLocalBackupReady(true)
         } finally {
             encrypted.fill(0)
         }

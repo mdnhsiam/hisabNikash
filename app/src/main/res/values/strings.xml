@@ -149,4 +149,7 @@
     <string name="delete_folder_backup_help">Phone folder: open your chosen backup folder in the Files app. Delete only the HisabNikash backup files you no longer need, including previous or temporary copies if present.</string>
     <string name="delete_drive_backup_help">Google Drive: on a computer, open Drive Settings → Manage apps. Find HisabNikash and use its hidden app-data deletion option.</string>
     <string name="backup_delete_irreversible">Deleting your last backup can permanently remove your recovery option. Check that another valid copy exists before deleting.</string>
+    <string name="local_backup_setup_required">Folder selected — setup incomplete. Tap Back up now, choose a password and save your first encrypted copy before relying on backup.</string>
+    <string name="drive_backup_setup_required">Drive connected for restore — backup setup incomplete. Tap Back up to Drive with a password to save your first copy and enable background backup.</string>
+    <string name="drive_backup_ready">Encrypted Drive backup is configured. Keep your password safe and verify your backups regularly.</string>
 </resources>

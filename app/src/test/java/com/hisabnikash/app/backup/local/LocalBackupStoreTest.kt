@@ -53,6 +53,7 @@ class LocalBackupStoreTest {
         assertTrue(documents.lastBytes!!.isNotEmpty())
         assertArrayEquals("backup-pass".toCharArray(), secrets.password)
         assertEquals(500L, preferences.state.value.lastLocalBackupAtEpochMillis)
+        assertTrue("only a successful snapshot marks setup complete", preferences.state.value.localBackupReady)
     }
 
     @Test(expected = BackupLocationUnavailableException::class)
@@ -74,6 +75,22 @@ class LocalBackupStoreTest {
 
         assertTrue(result.isFailure)
         assertEquals(before.copy(exportedAtEpochMillis = 0), SnapshotExporter(database) { 0 }.export())
+    }
+
+    @Test fun `missing queued password keeps backup setup visibly incomplete`() = runTest {
+        val preferences = FakePreferences(UserPreferenceState(localBackupEnabled = true, localBackupUri = "content://fixture", localBackupReady = true))
+        store(FakeDocuments(), preferences, FakeSecrets()).backUpQueued()
+        assertFalse(preferences.state.value.localBackupReady)
+    }
+
+    @Test fun `changing folder requires a new first backup without reusing the old password`() = runTest {
+        val preferences = FakePreferences(UserPreferenceState(localBackupEnabled = true,
+            localBackupUri = "content://old-folder", localBackupReady = true, lastLocalBackupAtEpochMillis = 500))
+        val secrets = FakeSecrets().apply { save("old-password".toCharArray()) }
+        store(FakeDocuments(), preferences, secrets).chooseBackupLocation(Uri.parse("content://new-folder"))
+        assertFalse(preferences.state.value.localBackupReady)
+        assertEquals(null, preferences.state.value.lastLocalBackupAtEpochMillis)
+        assertEquals(null, secrets.password)
     }
 
     @Test
@@ -140,6 +157,7 @@ class LocalBackupStoreTest {
         val preferences = object : LocalBackupPreferences {
             override val state = MutableStateFlow(UserPreferenceState(localBackupEnabled = true))
             override suspend fun setLocalBackup(enabled: Boolean, uri: String?) { state.value = state.value.copy(localBackupEnabled = enabled) }
+            override suspend fun setLocalBackupReady(ready: Boolean) { state.value = state.value.copy(localBackupReady = ready) }
             override suspend fun setLastLocalBackupAt(epochMillis: Long?) { error("fixture preference failure") }
         }
         val secrets = FakeSecrets().apply { save("password9".toCharArray()) }
@@ -210,6 +228,7 @@ private class FakeDocuments(private val available: Boolean = true, private val w
 private class FakePreferences(initial: UserPreferenceState = UserPreferenceState()) : LocalBackupPreferences {
     override val state = MutableStateFlow(initial)
     override suspend fun setLocalBackup(enabled: Boolean, uri: String?) { state.value = state.value.copy(localBackupEnabled = enabled, localBackupUri = uri) }
+    override suspend fun setLocalBackupReady(ready: Boolean) { state.value = state.value.copy(localBackupReady = ready) }
     override suspend fun setLastLocalBackupAt(epochMillis: Long?) { state.value = state.value.copy(lastLocalBackupAtEpochMillis = epochMillis) }
 }
 

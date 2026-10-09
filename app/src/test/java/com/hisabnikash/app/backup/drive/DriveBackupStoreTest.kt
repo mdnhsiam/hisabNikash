@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.hisabnikash.app.backup.SnapshotExporter
 import com.hisabnikash.app.backup.SnapshotImporter
 import com.hisabnikash.app.backup.crypto.BackupCrypto
+import com.hisabnikash.app.backup.crypto.BackupPasswordCache
 import com.hisabnikash.app.data.db.HisabDatabase
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.CompletableDeferred
@@ -74,5 +75,27 @@ class DriveBackupStoreTest {
         var uploaded: ByteArray? = null
         override suspend fun uploadLatest(accessToken: String, encryptedEnvelope: ByteArray) { uploaded = encryptedEnvelope.copyOf() }
         override suspend fun downloadLatest(accessToken: String): ByteArray? = uploaded
+    }
+
+    @Test fun `first successful encrypted upload marks backup ready`() = runTest {
+        var ready = false
+        val store = DriveBackupStore(RecordingRemote(), SnapshotExporter(database),
+            SnapshotImporter(database, BackupCrypto(10_000)), setBackupReady = { ready = it })
+        store.backUpNow("fixture-token", "password9".toCharArray())
+        assertTrue(ready)
+    }
+
+    @Test fun `missing queued password invalidates active backup readiness`() = runTest {
+        var ready = true
+        val emptyCache = object : BackupPasswordCache {
+            override fun save(password: CharArray) = Unit
+            override fun load(): CharArray? = null
+            override fun clear() = Unit
+        }
+        val store = DriveBackupStore(RecordingRemote(), SnapshotExporter(database),
+            SnapshotImporter(database, BackupCrypto(10_000)), passwordCache = emptyCache,
+            setBackupReady = { ready = it })
+        assertTrue(runCatching { store.backUpQueued { "fixture-token" } }.isFailure)
+        assertFalse(ready)
     }
 }

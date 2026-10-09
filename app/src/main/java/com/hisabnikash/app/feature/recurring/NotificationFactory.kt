@@ -18,6 +18,7 @@ import com.hisabnikash.app.core.money.MoneyFormatter
 import android.net.Uri
 
 class NotificationFactory(private val context: Context) {
+    fun cancelAll() { NotificationManagerCompat.from(context).cancelAll() }
     fun createChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java)

@@ -100,7 +100,7 @@ fun HisabNavHost(
     var showDuplicateWarning by remember { mutableStateOf(false) }
     var duplicateMatch by remember { mutableStateOf<com.hisabnikash.app.core.model.Transaction?>(null) }
     val scope = rememberCoroutineScope()
-    val monthClock = remember { CurrentMonthClock() }
+    val monthClock = rememberMonthClock()
     val currentMonth by monthClock.month.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, monthClock) {
