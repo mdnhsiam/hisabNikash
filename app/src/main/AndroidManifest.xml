@@ -8,9 +8,9 @@
         android:allowBackup="false"
         android:fullBackupContent="@xml/backup_rules_legacy"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@mipmap/hisab_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/ic_launcher"
+        android:roundIcon="@mipmap/hisab_launcher"
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
         android:theme="@style/Theme.Hisab">
