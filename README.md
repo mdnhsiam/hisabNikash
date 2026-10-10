@@ -8,6 +8,8 @@ The generated ledger/checkmark logo is placed in the dashboard and Android launc
 
 ## Install the closed-test build
 
+Download [HisabNikash 0.1.2 test APK](https://github.com/mdnhsiam/hisabNikash/releases/download/v0.1.2-alpha.1/HisabNikash-0.1.2-test.apk) from the private [test release](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.2-alpha.1). Sign into a GitHub account with repository access. This pre-release includes the new logo and hardened app changes; it is not production sign-off.
+
 1. Copy `app/build/outputs/apk/debug/app-debug.apk` to an Android 7.0 (API 24) or newer device.
 2. Allow installation from the file manager when Android asks, then open the APK.
 3. Because this is a debug-signed closed-test build, do not distribute it as a production Play Store release.
@@ -23,7 +25,7 @@ Build locally with Android Studio's bundled JDK:
 .\gradlew.bat --no-daemon '-Dorg.gradle.java.home=C:\Program Files\Android\Android Studio\jbr' clean testDebugUnitTest lintDebug assembleDebug
 ```
 
-See the dated [release test report](docs/testing/release-test-report.md) for the candidate version, checksum and executed checks. The older `v0.1.0-alpha.1` GitHub prerelease is not the current hardened candidate.
+See the dated [release test report](docs/testing/release-test-report.md) for the candidate version, checksum and executed checks. Use `v0.1.2-alpha.1`; the older `v0.1.0-alpha.1` GitHub prerelease is not the current hardened candidate.
 
 See [production readiness](docs/production-readiness-2026-10-09.md), [manual-release-checklist.md](docs/testing/manual-release-checklist.md), and [data-handling.md](docs/privacy/data-handling.md). Real-device restore, Google authorization and owner-controlled release signing are required before production sign-off; a passing build does not establish those results.
 
