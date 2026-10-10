@@ -1,6 +1,8 @@
 # HisabNikash production security assessment
 
-Assessment started 2026-10-09, refreshed 2026-10-10 (Asia/Dhaka). Scope: the private, closed-distribution Android application, its resolved release runtime dependencies, and a manual CI workflow. Verified application source is `14bdfb8e911a0422cd48f72a5bea7f37e2433674`. Clean JVM/lint/build gates passed; device/OAuth/signing gates remain open. This assessment does not declare the app production ready or authorize public distribution.
+Assessment started 2026-10-09, core refresh 2026-10-10, branding/runtime refresh 2026-10-11 (Asia/Dhaka). Scope: the private, closed-distribution Android application, its resolved release runtime dependencies, and a manual CI workflow. Core hardening was verified at `14bdfb8e911a0422cd48f72a5bea7f37e2433674`; the latest branded application source is `db3d9e76acd266aec5613cf8838c98b56bb7e96e`. Clean JVM/lint/build gates passed; device/OAuth/signing gates remain open. This assessment does not declare the app production ready or authorize public distribution.
+
+The 0.1.2/code3 delta adds generated dashboard/launcher branding and six rendering/accessibility unit tests, not a new financial/storage/network implementation. The current clean run passed 157 tests across 46 suites, zero lint issues, instrumentation compilation and both APK builds. Targeted logging/embedded-secret scans again returned no matches; the 107 selected runtime packages are unchanged. A separate branding review finding was repaired RED→GREEN; this is not a second security review or penetration test. [Branding evidence](branding/review-and-verification.md)
 
 ## Runtime dependency and advisory evidence
 
@@ -8,7 +10,8 @@ The runtime inventory is generated from Gradle's selected `releaseRuntimeClasspa
 
 - [Complete resolved inventory](security/runtime-inventory-2026-10-09.json)
 - [Complete OSV response mapped to each package](security/osv-runtime-2026-10-09.json)
-- [Refreshed final-candidate OSV response](security/osv-runtime-2026-10-10.json):107 selected packages,0 known affected packages,0 differences from the reviewed inventory. SHA-256:`5fb631c32205e9054c633da75b0bcca946085e8aed4c390be9439d0e7ae2bfdb`.
+- [Core-candidate OSV response](security/osv-runtime-2026-10-10.json):107 selected packages,0 known affected packages,0 differences from the reviewed inventory. SHA-256:`5fb631c32205e9054c633da75b0bcca946085e8aed4c390be9439d0e7ae2bfdb`.
+- [Branded-candidate OSV response](security/osv-runtime-2026-10-11.json): checked at `2026-10-10T19:04:28.221424+00:00` (2026-10-11 in Dhaka),107 selected packages,0 known affected packages,0 differences from the reviewed inventory. SHA-256:`6d5ab9c931832e9d4addd89580337b84558356e0701d66e4508364ecf10b94b1`.
 
 SHA-256 of the reviewable snapshots: inventory `293a9d5e50edc33fcebf0697da35ade98ce69ff12eedfda4b91eae40c676e325`; OSV response `c762002c1fa909462399295966bb6370031d35d9151edea3a2daa1a5fce35148`. These normalized JSON copies preserve the original data; their hashes differ from the original generated files' formatting.
 
@@ -67,13 +70,13 @@ This private repository's standard hosted jobs consume the owner's included allo
 
 | Gate | Required evidence | Current status |
 | --- | --- | --- |
-| Final hardening validation | Fresh whole-suite results, lint, minified build, and both emulator runs against the final change set | 151 JVM tests and both lint/build gates passed; instrumentation compiled but no device; hosted CI not run |
+| Final hardening validation | Fresh whole-suite results, lint, minified build, and both emulator runs against the final change set | 157 JVM tests and both lint/build gates passed; instrumentation compiled but no device; hosted CI not run |
 | Minimum OS crypto | API 24/25 encrypted round trip, wrong-password rejection, and cross-version compatibility of existing backups | Format-compatible fallback implemented; vectors/Unicode parity and Robolectric checks passed; actual Android execution required |
 | Backup/restore lifecycle | All backup/import/delete/worker operations share the intended serialization boundary; restore failure retains the ledger; platform extraction exclusions verified | Focused57-test backup/settings GREEN plus full suite; physical-device checks outstanding |
 | Owner-controlled signing | Release keystore, backed-up key/recovery procedure, signed APK signature verification, clean install/update test, and SHA-256 distribution record | Owner signing material and signed candidate absent |
 | Google OAuth/Drive | Registered Android package and signing-certificate client, consent/test users, real sign-in/denial/revocation/reconnect, upload and clean-device restore | Owner setup/test account absent; fake transport tests are insufficient |
 | Device behavior | Physical minimum/current OS, process death, reboot/background backup/reminders, denied permissions, Bangla/English layouts, large ledger, uninstall/reinstall/folder and Drive restore | Physical-device evidence absent |
 | Private release access and cost | Explicit approved recipients/distribution path; free allowance plus stopped overage verified before any CI dispatch | No publication or billing action performed |
-| Privacy and security claims | Docs match final manifest/storage/extraction behavior and clearly distinguish encrypted backups from local database protection | Fresh review completed; four Important issues repaired and final151-test suite green. No certification/penetration-test claim |
+| Privacy and security claims | Docs match final manifest/storage/extraction behavior and clearly distinguish encrypted backups from local database protection | Core review completed; four Important issues repaired. Branding review added one repaired Important issue; current157-test suite green. No certification/penetration-test claim |
 
-Both the older 0.1.0 alpha asset and the current locally built 0.1.1 candidate are test artifacts. Missing owner OAuth configuration, release signing, device checks, or execution evidence remain incomplete release gates. See the [exact candidate/checksum report](testing/release-test-report.md).
+Both the older 0.1.0 alpha asset and the current locally built 0.1.2 candidate are test artifacts. Missing owner OAuth configuration, release signing, device checks, or execution evidence remain incomplete release gates. See the [exact candidate/checksum report](testing/release-test-report.md).

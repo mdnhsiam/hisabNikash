@@ -1,6 +1,10 @@
 # HisabNikash
 
+<img src="app/src/main/res/drawable-nodpi/hisab_logo.png" width="96" alt="HisabNikash ledger and checkmark logo">
+
 Bangla-first, offline-first personal income and expense tracking for Android. The first release includes quick entry, Cash/Bank/bKash/Nagad payment methods, custom categories, monthly dashboard/reports, optional budgets and savings goals, recurring reminders, encrypted phone-folder backup, and opt-in user-owned Google Drive backup.
+
+The generated ledger/checkmark logo is placed in the dashboard and Android launcher. [Logo source, generation prompts and placement](docs/branding/logo-generation.md), [branding review and regression evidence](docs/branding/review-and-verification.md).
 
 ## Install the closed-test build
 

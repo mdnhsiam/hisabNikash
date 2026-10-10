@@ -1,4 +1,4 @@
-# HisabNikash 0.1.1 closed-test checklist
+# HisabNikash 0.1.2 closed-test checklist
 
 ## Automated evidence
 
@@ -8,10 +8,12 @@
 - [x] 10,000-transaction report fixture meets the JVM performance threshold.
 - [x] Offline/retry/quota/auth Drive behavior is covered by fake HTTP contract tests.
 - [x] Unit tests, Android instrumentation compilation, lint and debug APK assembly pass.
+- [x] Generated dashboard/launcher logo, API24/API26/modern resources, Bangla identity at 200% text and circular-safe-area rendering regressions pass; complete clean suite157/157 and both lint reports contain zero issues.
 - [x] Final-review regressions: retained month clock after composition recreation, failed category-rename draft retention, reminder cancellation/deletion boundary, and truthful first-backup readiness.
 
 ## Real-device checks required before wider distribution
 
+- [ ] Verify launcher appearance under the device's standard/themed icon settings and dashboard branding in Bangla/English with large text and TalkBack.
 - [ ] Airplane mode: add/edit/delete transactions and confirm dashboard/report updates.
 - [ ] Process death: enter data, force-stop, reopen and confirm persistence.
 - [ ] Reboot: confirm enabled recurring reminders are rescheduled and notification opens the review flow.

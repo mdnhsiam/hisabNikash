@@ -1,0 +1,13 @@
+# Branding review and repair
+
+Scope: generated logo, dashboard identity, launcher resources and version 0.1.2/code 3. Baseline: `4f01ec5fa2e94349172f24cf7ef0dc5d037f0a85`. This is not a new financial/security audit or production approval.
+
+Final verification: 2026-10-11 (Asia/Dhaka), application commit `db3d9e76acd266aec5613cf8838c98b56bb7e96e`. A clean combined gate passed in 2m57s: 46 suites,157 tests,0 failures/errors/skips; both debug/release lint reports have zero issues; instrumentation compilation and both APK builds passed. The debug signature and both APKs' 16K alignment were checked. Physical-device/OAuth tests remain unexecuted; release output remains unsigned.
+
+One independent read-only review returned **one Important finding**, no Critical or Minor findings, and a “With fixes” branding verdict. The initial 8% adaptive foreground padding left key artwork outside Android's guaranteed 66dp-diameter circular safe zone. The old regression checked a square and missed that contract. The reviewer measured a maximum source-art radius of 33.918dp, with 3,646 source pixels of alpha >32 outside the ideal circle; this was a clipping risk, not an observed crop in the rounded-square preview.
+
+The requirement was verified against [Android's official app-icon codelab](https://developer.android.com/codelabs/basic-android-kotlin-compose-training-change-app-icon). The real-resource/native-rendering test was changed first to check pixel-center distance from the circular safe area at 108 and 324 pixels. It failed against the unchanged 8% resource: **38 visible rendered pixels outside the circle at size 108** (4 launcher tests, 1 failure). Increasing only the API26+ proportional padding to 10% per side repaired the source; all six focused launcher/dashboard tests then passed, including both sizes. Foreground and monochrome share that repaired resource. No test expectation was relaxed and no second review verdict is claimed.
+
+The earlier logo integration was also test-first: the missing dashboard identity and old launcher resource produced failures before replacement. A test-fixture manifest lookup error and offscreen PixelCopy timeout were corrected in test code only; neither is presented as a production bug or as RED evidence.
+
+The review declined to certify previous core hardening, actual launcher/TalkBack/device behavior, Google OAuth, owner-controlled signing, or legal originality/trademark clearance. These boundaries remain open in the [release checklist](../testing/manual-release-checklist.md). The [release report](../testing/release-test-report.md) records the final whole-suite/build results and exact APK checksum.
