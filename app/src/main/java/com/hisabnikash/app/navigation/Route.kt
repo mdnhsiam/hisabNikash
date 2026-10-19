@@ -15,6 +15,8 @@ sealed class Route(
     data object Settings : Route("settings", "nav_settings", R.string.nav_settings)
 
     companion object {
-        val bottomRoutes: List<Route> = listOf(Dashboard, Transactions, Reports, Savings, Settings)
+        // A destination can initialize its Route superclass before its own
+        // INSTANCE exists. Do not capture those singletons in Route's initializer.
+        val bottomRoutes: List<Route> by lazy { listOf(Dashboard, Transactions, Reports, Savings, Settings) }
     }
 }
