@@ -1,5 +1,11 @@
 # HisabNikash production security assessment
 
+## 2026-10-20 startup-repair refresh
+
+Current candidate0.1.3/code4 at `41a2b5976ed095fd00e7f0363f99c58f625d3380` changes only navigation initialization/version in production code, not storage/network/dependencies. Clean162-test/48-suite,zero-lint,instrumentation-compilation and both-build gates passed. Targeted scans had no matches. [Current report](testing/release-test-report.md). [OSV refresh](security/osv-runtime-2026-10-20.json): unchanged107 packages,0 known affected; SHA256 `a73eb28743bb72705cffd39667220c57441bf3eb69bbd2ded0a8d9fd0184fd29`. Not a new security audit or penetration test.0.1.2 is withdrawn;0.1.3 is debug-signed closed-test only. Device/OAuth/signing gates remain open. The following assessment records earlier checkpoints; historical157-test counts are not current suite counts.
+
+## Historical assessment
+
 Assessment started 2026-10-09, core refresh 2026-10-10, branding/runtime refresh 2026-10-11 (Asia/Dhaka). Scope: the private, closed-distribution Android application, its resolved release runtime dependencies, and a manual CI workflow. Core hardening was verified at `14bdfb8e911a0422cd48f72a5bea7f37e2433674`; the latest branded application source is `db3d9e76acd266aec5613cf8838c98b56bb7e96e`. Clean JVM/lint/build gates passed; device/OAuth/signing gates remain open. This assessment does not declare the app production ready or authorize public distribution.
 
 The 0.1.2/code3 delta adds generated dashboard/launcher branding and six rendering/accessibility unit tests, not a new financial/storage/network implementation. The current clean run passed 157 tests across 46 suites, zero lint issues, instrumentation compilation and both APK builds. Targeted logging/embedded-secret scans again returned no matches; the 107 selected runtime packages are unchanged. A separate branding review finding was repaired RED→GREEN; this is not a second security review or penetration test. [Branding evidence](branding/review-and-verification.md)

@@ -1,10 +1,14 @@
 # HisabNikash release readiness
 
-Assessment started 2026-10-09; branded-candidate verification 2026-10-11 (Asia/Dhaka). Scope: the approved free, Bangla/English, offline-first Android app for closed use. No public hosting, developer-operated server, analytics or paid tier has been added.
+Assessment started 2026-10-09; branded-candidate verification 2026-10-20 (Asia/Dhaka). Scope: the approved free, Bangla/English, offline-first Android app for closed use. No public hosting, developer-operated server, analytics or paid tier has been added.
+
+## Startup repair refresh
+
+Version0.1.3 is published as a private test candidate;0.1.2 APK is withdrawn. A reproduced navigation initialization crash was repaired RED→GREEN; independent scoped review found no findings. Actual phone launch, installed update and ledger preservation remain unverified. [Current evidence](testing/release-test-report.md).
 
 ## Status
 
-HisabNikash 0.1.2 is a locally built, debug-signed test candidate. The clean automated gates passed at application source `db3d9e76acd266aec5613cf8838c98b56bb7e96e`. The earlier core review returned four Important findings; the separate branding review returned one Important finding. All were repaired with failing-then-passing regressions and the green whole suite. This document is not production sign-off. Real-device restore, Google authorization and owner signing remain unverified. No claim of zero defects, complete penetration testing or OWASP certification is made.
+HisabNikash 0.1.3 is a locally built, debug-signed test candidate. The clean automated gates passed at application source `41a2b5976ed095fd00e7f0363f99c58f625d3380`. The earlier core review returned four Important findings; the separate branding review returned one Important finding. All were repaired with failing-then-passing regressions and the green whole suite. This document is not production sign-off. Real-device restore, Google authorization and owner signing remain unverified. No claim of zero defects, complete penetration testing or OWASP certification is made.
 
 ## Repaired areas
 
@@ -25,14 +29,14 @@ Backup/restore/disable/deletion now share a serialized operation gate. Recovery 
 | Check | Evidence/status |
 | --- | --- |
 | First persistence checkpoint | 98 JVM tests, zero failures; commit `bad1fae` |
-| Final complete JVM/Compose/SQLite suite | Clean run: 46 suites, 157 tests, zero failures/errors/skips |
+| Final complete JVM/Compose/SQLite suite | Clean run: 48 suites, 162 tests, zero failures/errors/skips |
 | Debug and release lint | Both passed; zero lint issues |
-| Debug and minified unsigned release builds | Both passed; 0.1.2/code 3, minimum API24/target API36; release non-debuggable, debug signature verifies, both pass 16K zip alignment |
+| Debug and minified unsigned release builds | Both passed; 0.1.3/code 4, minimum API24/target API36; release non-debuggable, debug signature verifies, both pass 16K zip alignment |
 | Android instrumentation compilation | Passed in final clean run; earlier core gate also assembled both test APKs |
-| Android instrumentation execution | Earlier core gate stopped with `No connected devices!`; fresh branded-candidate device list remains empty. Not executed for 0.1.2, not passing |
-| Runtime dependency advisories | Final resolved inventory unchanged:107 packages; 2026-10-11 OSV check returned no known affected packages. This is not proof of no vulnerabilities |
+| Android instrumentation execution | Earlier core gate stopped with `No connected devices!`; fresh branded-candidate device list remains empty. Not executed for 0.1.3, not passing |
+| Runtime dependency advisories | Final resolved inventory unchanged:107 packages; 2026-10-20 OSV check returned no known affected packages. This is not proof of no vulnerabilities |
 | Hosted CI | YAML/action/Bash/scanner checks passed; real GitHub jobs not run |
-| Independent reviews | Four core Important findings and one separate branding Important finding repaired RED→GREEN; final whole suite157/157. [Core record](testing/production-hardening-review.md), [branding record](branding/review-and-verification.md) |
+| Independent reviews | Four core Important findings and one separate branding Important finding repaired RED→GREEN; final whole suite162/162. [Core record](testing/production-hardening-review.md), [branding record](branding/review-and-verification.md) |
 
 The manual CI workflow has no automatic triggers. It requires owner confirmation of available included minutes and a no-overage spending limit, uses pinned official actions/read-only permissions, and has bounded jobs. No billing setting was changed. [Security and dependency assessment](production-security-assessment-2026-10-09.md)
 
