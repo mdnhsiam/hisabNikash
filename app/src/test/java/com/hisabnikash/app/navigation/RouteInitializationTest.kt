@@ -6,7 +6,7 @@ import org.junit.Test
 
 class RouteInitializationTest {
     @Test fun `each destination can initialize before the navigation list in a cold process`() {
-        for (destination in listOf("Dashboard", "Transactions", "Reports", "Savings", "Settings")) {
+        for (destination in listOf("Dashboard", "Transactions", "Reports", "Savings", "Settings", "More")) {
             assertRoutesAfterFirstClass("$ROUTE_CLASS\$$destination")
         }
     }
@@ -41,8 +41,8 @@ class RouteInitializationTest {
         val entries = companion.javaClass.getMethod("getBottomRoutes").invoke(companion) as List<*>
         entries.forEach { assertNotNull("null navigation entry after $firstClass initializes first", it) }
         assertEquals(
-            "all five ordered destinations must remain usable after $firstClass initializes first",
-            listOf("dashboard", "transactions", "reports", "savings", "settings"),
+            "primary destinations must remain usable after $firstClass initializes first",
+            listOf("dashboard", "transactions", "reports", "more"),
             entries.map { route.getMethod("getPath").invoke(it) },
         )
     }

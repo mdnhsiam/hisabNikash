@@ -9,10 +9,10 @@ class RouteTest {
     fun `bottom routes expose unique stable paths`() {
         val routes = Route.bottomRoutes
 
-        assertEquals(5, routes.size)
+        assertEquals(4, routes.size)
         assertEquals(routes.size, routes.map(Route::path).toSet().size)
         assertEquals(
-            setOf("dashboard", "transactions", "reports", "savings", "settings"),
+            setOf("dashboard", "transactions", "reports", "more"),
             routes.map(Route::path).toSet(),
         )
     }
@@ -26,8 +26,7 @@ class RouteTest {
                 "nav_dashboard",
                 "nav_transactions",
                 "nav_reports",
-                "nav_savings",
-                "nav_settings",
+                "nav_more",
             ),
             keys.toSet(),
         )

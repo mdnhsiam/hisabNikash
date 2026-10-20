@@ -59,6 +59,10 @@ class QuickEntryViewModel(
     fun setNote(value: String) = mutableState.update { it.copy(note = value) }
     fun setOccurredAt(epochMillis: Long) = mutableState.update { it.copy(occurredAtEpochMillis = epochMillis) }
     fun startNewEntry() = mutableState.update { it.copy(occurredAtEpochMillis = nowEpochMillis()) }
+    fun discardDraft() = mutableState.update {
+        it.copy(amountInput = "", description = "", customCategoryLabel = "", saveCustomCategory = false,
+            note = "", occurredAtEpochMillis = nowEpochMillis(), errors = emptyMap(), saveError = null)
+    }
 
     suspend fun submit(intentionalDuplicate: Boolean = false): SubmitResult {
         if (!submitMutex.tryLock()) return SubmitResult.InProgress

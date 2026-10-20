@@ -44,6 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import com.hisabnikash.app.core.time.DateInput
 import com.hisabnikash.app.core.time.MonthKey
+import com.hisabnikash.app.core.time.localizedLabel
 
 @Composable
 fun TransactionListScreen(
@@ -52,6 +53,7 @@ fun TransactionListScreen(
     onUpdate: suspend (Transaction) -> Boolean,
     onDelete: suspend (String, Boolean) -> Boolean,
     modifier: Modifier = Modifier,
+    onClearFilter: () -> Unit = {},
 ) {
     val useBangla = LocalConfiguration.current.locales[0].language == "bn"
     var editing by remember { mutableStateOf<Transaction?>(null) }
@@ -61,6 +63,14 @@ fun TransactionListScreen(
     val scope = rememberCoroutineScope()
     Column(modifier = modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Text(stringResource(R.string.transactions_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 16.dp))
+        if (state.typeFilter != null || state.monthFilter != null) {
+            Text(
+                listOfNotNull(state.monthFilter?.localizedLabel(LocalConfiguration.current.locales[0]),
+                    state.typeFilter?.let { stringResource(if (it == TransactionType.INCOME) R.string.income else R.string.expense) }).joinToString(" · "),
+                style = MaterialTheme.typography.labelLarge,
+            )
+            TextButton(onClick = onClearFilter) { Text(stringResource(R.string.view_all)) }
+        }
         OutlinedTextField(
             value = state.query,
             onValueChange = onQueryChange,

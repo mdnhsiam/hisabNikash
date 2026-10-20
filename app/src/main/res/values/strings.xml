@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">HisabNikash</string>
-    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_dashboard">Home</string>
     <string name="nav_transactions">Transactions</string>
     <string name="nav_reports">Reports</string>
     <string name="nav_savings">Savings</string>
@@ -32,7 +32,6 @@
     <string name="possible_duplicate_message">A similar transaction was just saved. Save this one too?</string>
     <string name="save_anyway">Save anyway</string>
     <string name="dashboard_title">Your month at a glance</string>
-    <string name="monthly_balance">Monthly balance</string>
     <string name="monthly_budget">Monthly budget</string>
     <string name="budget_setup_prompt">Optional: set a budget to see your monthly progress.</string>
     <string name="recent_transactions">Recent transactions</string>
@@ -152,4 +151,24 @@
     <string name="local_backup_setup_required">Folder selected — setup incomplete. Tap Back up now, choose a password and save your first encrypted copy before relying on backup.</string>
     <string name="drive_backup_setup_required">Drive connected for restore — backup setup incomplete. Tap Back up to Drive with a password to save your first copy and enable background backup.</string>
     <string name="drive_backup_ready">Encrypted Drive backup is configured. Keep your password safe and verify your backups regularly.</string>
+    <string name="nav_more">More</string>
+    <string name="show_dashboard_details">Show dashboard details</string>
+    <string name="hide_dashboard_details">Hide dashboard details</string>
+    <string name="monthly_remainder">Remaining this month</string>
+    <string name="monthly_remainder_help">Recorded income minus expenses — not your account balance.</string>
+    <string name="details_private">Your details stay private</string>
+    <string name="details_private_help">Tap the eye to reveal this month and recent transactions.</string>
+    <string name="recent_transactions_hidden">Recent transactions are hidden.</string>
+    <string name="view_all">View all</string>
+    <string name="date_and_note">Date and note</string>
+    <string name="expand_entry">Expand form</string>
+    <string name="collapse_entry">Collapse form</string>
+    <string name="close_entry">Close form</string>
+    <string name="discard_entry_title">Discard this entry?</string>
+    <string name="discard_entry_message">Your unsaved changes will be lost.</string>
+    <string name="discard_entry">Discard</string>
+    <string name="keep_editing">Keep editing</string>
+    <string name="budgets_and_goals">Budgets and savings</string>
+    <string name="privacy_display_help">Home details are hidden on opening and when you leave the app. This is not an app lock.</string>
+    <string name="font_licenses">Font license</string>
 </resources>

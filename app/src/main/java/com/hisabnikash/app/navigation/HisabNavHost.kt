@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,6 +55,7 @@ import androidx.navigation.compose.rememberNavController
 import com.hisabnikash.app.AppContainer
 import com.hisabnikash.app.R
 import com.hisabnikash.app.feature.transactions.QuickEntryScreen
+import com.hisabnikash.app.feature.transactions.QuickEntrySheet
 import com.hisabnikash.app.feature.transactions.QuickEntryViewModel
 import com.hisabnikash.app.feature.transactions.SubmitResult
 import com.hisabnikash.app.feature.transactions.TransactionListScreen
@@ -96,7 +99,7 @@ fun HisabNavHost(
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentPath = backStackEntry?.destination?.route ?: Route.Dashboard.path
-    var showQuickEntry by remember { mutableStateOf(false) }
+    var showQuickEntry by rememberSaveable { mutableStateOf(false) }
     var showDuplicateWarning by remember { mutableStateOf(false) }
     var duplicateMatch by remember { mutableStateOf<com.hisabnikash.app.core.model.Transaction?>(null) }
     val scope = rememberCoroutineScope()
@@ -237,11 +240,12 @@ fun HisabNavHost(
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 Route.bottomRoutes.forEach { route ->
                     NavigationBarItem(
-                        selected = currentPath == route.path,
+                        selected = currentPath == route.path || (route == Route.More && currentPath in listOf(Route.Savings.path, Route.Settings.path)),
                         onClick = {
+                            if (route == Route.Transactions) transactionListViewModel.setDashboardFilter(null, null)
                             navController.navigate(route.path) {
                                 popUpTo(Route.Dashboard.path) { saveState = true }
                                 launchSingleTop = true
@@ -257,12 +261,14 @@ fun HisabNavHost(
             }
         },
         floatingActionButton = {
-            FloatingActionButton(
+            if (currentPath == Route.Dashboard.path || currentPath == Route.Transactions.path) ExtendedFloatingActionButton(
                 onClick = { quickEntryViewModel.startNewEntry(); showQuickEntry = true },
                 modifier = Modifier.semantics { contentDescription = addTransactionLabel },
-            ) {
-                Text(text = "+", style = MaterialTheme.typography.headlineSmall)
-            }
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                icon = { Text("+", style = MaterialTheme.typography.titleLarge) },
+                text = { Text(addTransactionLabel) },
+            )
         },
     ) { padding ->
         NavHost(
@@ -272,7 +278,22 @@ fun HisabNavHost(
         ) {
             composable(Route.Dashboard.path) {
                 val state by dashboardViewModel.state.collectAsState()
-                DashboardScreen(state)
+                DashboardScreen(state,
+                    onViewTransactions = {
+                        transactionListViewModel.setDashboardFilter(null, null)
+                        navController.navigate(Route.Transactions.path) { launchSingleTop = true }
+                    },
+                    onViewType = { type ->
+                        transactionListViewModel.setDashboardFilter(type, state.summary.month)
+                        navController.navigate(Route.Transactions.path) { launchSingleTop = true }
+                    },
+                )
+            }
+            composable(Route.More.path) {
+                MoreScreen(
+                    onBudgetsAndGoals = { navController.navigate(Route.Savings.path) { launchSingleTop = true } },
+                    onSettings = { navController.navigate(Route.Settings.path) { launchSingleTop = true } },
+                )
             }
             composable(Route.Transactions.path) {
                 val state by transactionListViewModel.state.collectAsState()
@@ -281,6 +302,7 @@ fun HisabNavHost(
                     onQueryChange = transactionListViewModel::setQuery,
                     onUpdate = transactionListViewModel::update,
                     onDelete = transactionListViewModel::delete,
+                    onClearFilter = { transactionListViewModel.setDashboardFilter(null, null) },
                 )
             }
             composable(Route.Reports.path) {
@@ -364,28 +386,28 @@ fun HisabNavHost(
 
     if (showQuickEntry) {
         val state by quickEntryViewModel.state.collectAsState()
-        ModalBottomSheet(onDismissRequest = { showQuickEntry = false }) {
-            QuickEntryScreen(
-                state = state,
-                onTypeChange = quickEntryViewModel::setType,
-                onAmountChange = quickEntryViewModel::setAmount,
-                onDescriptionChange = quickEntryViewModel::setDescription,
-                onCategoryChange = quickEntryViewModel::setCategory,
-                onCustomCategoryChange = quickEntryViewModel::setCustomCategory,
-                onPaymentMethodChange = quickEntryViewModel::setPaymentMethod,
-                onNoteChange = quickEntryViewModel::setNote,
-                onDateChange = quickEntryViewModel::setOccurredAt,
-                onSubmit = {
-                    scope.launch {
-                        when (val result = quickEntryViewModel.submit()) {
-                            is SubmitResult.Saved -> showQuickEntry = false
-                            is SubmitResult.PossibleDuplicate -> { duplicateMatch = result.existing; showDuplicateWarning = true }
-                            else -> Unit
-                        }
+        QuickEntrySheet(
+            onDismiss = { showQuickEntry = false },
+            onDiscard = quickEntryViewModel::discardDraft,
+            state = state,
+            onTypeChange = quickEntryViewModel::setType,
+            onAmountChange = quickEntryViewModel::setAmount,
+            onDescriptionChange = quickEntryViewModel::setDescription,
+            onCategoryChange = quickEntryViewModel::setCategory,
+            onCustomCategoryChange = quickEntryViewModel::setCustomCategory,
+            onPaymentMethodChange = quickEntryViewModel::setPaymentMethod,
+            onNoteChange = quickEntryViewModel::setNote,
+            onDateChange = quickEntryViewModel::setOccurredAt,
+            onSubmit = {
+                scope.launch {
+                    when (val result = quickEntryViewModel.submit()) {
+                        is SubmitResult.Saved -> showQuickEntry = false
+                        is SubmitResult.PossibleDuplicate -> { duplicateMatch = result.existing; showDuplicateWarning = true }
+                        else -> Unit
                     }
-                },
-            )
-        }
+                }
+            },
+        )
     }
 
     if (showDuplicateWarning && duplicateMatch != null) {

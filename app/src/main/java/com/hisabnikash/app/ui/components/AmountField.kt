@@ -24,6 +24,7 @@ fun AmountField(
         leadingIcon = { Text("৳", style = MaterialTheme.typography.titleLarge) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         singleLine = true,
+        textStyle = MaterialTheme.typography.headlineLarge,
         isError = error != null,
         supportingText = error?.let { { Text(it) } },
     )

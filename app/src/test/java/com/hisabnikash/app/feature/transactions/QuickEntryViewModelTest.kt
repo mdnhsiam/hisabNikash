@@ -141,6 +141,29 @@ class QuickEntryViewModelTest {
         assertEquals(200L, viewModel.state.value.occurredAtEpochMillis)
     }
 
+    @Test fun `explicit discard clears draft and validation without changing the ledger or payment default`() = runTest {
+        val fixture = Fixture()
+        advanceUntilIdle()
+        fixture.viewModel.setAmount("0")
+        fixture.viewModel.setDescription("Private draft")
+        fixture.viewModel.setNote("Private note")
+        fixture.viewModel.setCustomCategory("One off", true)
+        fixture.viewModel.setPaymentMethod(PaymentMethod.NAGAD)
+        fixture.viewModel.setOccurredAt(1L)
+        fixture.viewModel.submit()
+        fixture.viewModel.discardDraft()
+        val state = fixture.viewModel.state.value
+        assertEquals("", state.amountInput)
+        assertEquals("", state.description)
+        assertEquals("", state.note)
+        assertEquals("", state.customCategoryLabel)
+        assertFalse(state.saveCustomCategory)
+        assertTrue(state.errors.isEmpty())
+        assertEquals(100_000L, state.occurredAtEpochMillis)
+        assertEquals(PaymentMethod.NAGAD, state.paymentMethod)
+        assertTrue(fixture.transactions.added.isEmpty())
+    }
+
     private class Fixture(lastPaymentMethod: PaymentMethod = PaymentMethod.CASH) {
         val transactions = FakeTransactionRepository()
         val categories = FakeCategoryRepository()

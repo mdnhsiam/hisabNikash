@@ -6,6 +6,8 @@ import com.hisabnikash.app.core.model.Transaction
 import com.hisabnikash.app.data.repository.TransactionRepository
 import com.hisabnikash.app.data.repository.CategoryRepository
 import com.hisabnikash.app.core.model.Category
+import com.hisabnikash.app.core.model.TransactionType
+import com.hisabnikash.app.core.time.MonthKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,11 +21,15 @@ data class TransactionListState(
     val query: String = "",
     val error: String? = null,
     val categories: Map<String, Category> = emptyMap(),
+    val typeFilter: TransactionType? = null,
+    val monthFilter: MonthKey? = null,
 ) {
     val visibleTransactions: List<Transaction>
         get() = transactions.filter { transaction ->
-            query.isBlank() || transaction.description.contains(query.trim(), ignoreCase = true) ||
-                transaction.note.orEmpty().contains(query.trim(), ignoreCase = true)
+            (typeFilter == null || transaction.type == typeFilter) &&
+                (monthFilter == null || transaction.occurredAtEpochMillis in monthFilter.startEpochMillis() until monthFilter.endExclusiveEpochMillis()) &&
+                (query.isBlank() || transaction.description.contains(query.trim(), ignoreCase = true) ||
+                transaction.note.orEmpty().contains(query.trim(), ignoreCase = true))
         }
 }
 
@@ -43,6 +49,9 @@ class TransactionListViewModel(
     }
 
     fun setQuery(query: String) = mutableState.update { it.copy(query = query) }
+    fun setDashboardFilter(type: TransactionType?, month: MonthKey?) = mutableState.update {
+        it.copy(typeFilter = type, monthFilter = month, query = "")
+    }
 
     suspend fun update(transaction: Transaction): Boolean = action { repository.update(transaction) }
 

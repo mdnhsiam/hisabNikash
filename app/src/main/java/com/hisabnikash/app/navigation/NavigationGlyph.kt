@@ -19,9 +19,10 @@ fun NavigationGlyph(route: Route) {
         fun line(x1: Float, y1: Float, x2: Float, y2: Float) =
             drawLine(color, Offset(x1 * unit, y1 * unit), Offset(x2 * unit, y2 * unit), 2 * unit)
         when (route) {
+            Route.More -> { for (x in listOf(5f, 12f, 19f)) drawCircle(color, 1.7f * unit, Offset(x * unit, 12 * unit)) }
             Route.Dashboard -> {
-                for (x in listOf(3f, 14f)) for (y in listOf(3f, 14f))
-                    drawRect(color, Offset(x * unit, y * unit), Size(7 * unit, 7 * unit), style = Stroke(2 * unit))
+                line(3f, 11f, 12f, 3f); line(12f, 3f, 21f, 11f)
+                line(6f, 9f, 6f, 21f); line(6f, 21f, 18f, 21f); line(18f, 21f, 18f, 9f)
             }
             Route.Transactions -> { line(3f, 7f, 20f, 7f); line(16f, 3f, 20f, 7f); line(16f, 11f, 20f, 7f)
                 line(4f, 17f, 21f, 17f); line(4f, 17f, 8f, 13f); line(4f, 17f, 8f, 21f) }

@@ -20,7 +20,7 @@ class AppStartupInstrumentedTest {
 
     private fun assertDashboard() {
         compose.onNodeWithText(compose.activity.getString(R.string.dashboard_title)).assertIsDisplayed()
-        for (label in listOf(R.string.nav_dashboard, R.string.nav_transactions, R.string.nav_reports, R.string.nav_savings, R.string.nav_settings)) {
+        for (label in listOf(R.string.nav_dashboard, R.string.nav_transactions, R.string.nav_reports, R.string.nav_more)) {
             compose.onNodeWithText(compose.activity.getString(label)).assertIsDisplayed()
         }
     }

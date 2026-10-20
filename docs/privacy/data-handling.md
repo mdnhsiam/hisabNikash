@@ -2,6 +2,12 @@
 
 HisabNikash is offline-first. Transactions, categories, budgets, goals and recurring items are stored in the app's private Room database. No analytics, advertisements, developer server, or embedded service credential is used. The local database is not separately encrypted by the app; it relies on Android app isolation, device encryption and the device lock. A rooted, compromised or already-unlocked device is outside that protection boundary.
 
+## Home display privacy
+
+Home starts with monthly totals and recent transaction details hidden. The labeled eye button reveals both; hiding removes private text from composition and accessibility semantics, rather than placing a visual overlay over it. Leaving Home, recreating the Activity, or pausing/backgrounding the app requires a fresh reveal. Reports and the transaction list remain intentionally accessible through explicit navigation.
+
+This is shoulder-surfing protection, not authentication, encryption, a biometric app lock, screenshot blocking, or protection against a compromised/unlocked phone. It does not erase financial records. Unsaved entry drafts survive sheet resizing and Activity recreation, not guaranteed system process death; save important entries before leaving.
+
 ## Backup flows
 
 - Phone-folder backup is opt-in through Android's Storage Access Framework. The user chooses the folder and the app retains access only to that selection.

@@ -14,6 +14,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,21 +45,26 @@ fun QuickEntryScreen(
     onPaymentMethodChange: (PaymentMethod) -> Unit = {},
     onNoteChange: (String) -> Unit = {},
     onDateChange: (Long) -> Unit = {},
+    showHeading: Boolean = true,
+    onDraftInteraction: () -> Unit = {},
 ) {
-    var dateInput by remember(state.occurredAtEpochMillis) { mutableStateOf(java.time.Instant.ofEpochMilli(state.occurredAtEpochMillis).atZone(MonthKey.DHAKA).toLocalDate().toString()) }
+    var detailsExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var dateInput by androidx.compose.runtime.saveable.rememberSaveable(state.occurredAtEpochMillis) { mutableStateOf(java.time.Instant.ofEpochMilli(state.occurredAtEpochMillis).atZone(MonthKey.DHAKA).toLocalDate().toString()) }
     val parsedDate = DateInput.parse(dateInput)
     Column(
         modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Text(stringResource(R.string.quick_entry), style = MaterialTheme.typography.headlineSmall)
+        if (showHeading) Text(stringResource(R.string.quick_entry), style = MaterialTheme.typography.headlineSmall)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
+                modifier = Modifier.weight(1f),
                 selected = state.type == TransactionType.EXPENSE,
                 onClick = { onTypeChange(TransactionType.EXPENSE) },
                 label = { Text(stringResource(R.string.expense)) },
             )
             FilterChip(
+                modifier = Modifier.weight(1f),
                 selected = state.type == TransactionType.INCOME,
                 onClick = { onTypeChange(TransactionType.INCOME) },
                 label = { Text(stringResource(R.string.income)) },
@@ -104,10 +110,14 @@ fun QuickEntryScreen(
                 Text(stringResource(R.string.save_category_for_later))
             }
         }
-        HorizontalDivider()
-        Text(stringResource(R.string.payment_method), style = MaterialTheme.typography.labelLarge)
         PaymentMethodDropdown(selected = state.paymentMethod, onSelected = onPaymentMethodChange)
+        TextButton(onClick = { detailsExpanded = !detailsExpanded }) {
+            Text(stringResource(R.string.date_and_note))
+        }
+        // Never hide the only recovery path while an invalid date disables Save.
+        if (detailsExpanded || parsedDate == null) {
         OutlinedTextField(dateInput, { value ->
+            onDraftInteraction()
             dateInput = value
             DateInput.parse(value)?.let { onDateChange(it.atStartOfDay(MonthKey.DHAKA).toInstant().toEpochMilli()) }
         }, label = { Text(stringResource(R.string.transaction_date)) }, singleLine = true,
@@ -119,6 +129,7 @@ fun QuickEntryScreen(
             label = { Text(stringResource(R.string.note_optional)) },
             minLines = 2,
         )
+        }
         state.saveError?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
         Button(
             onClick = onSubmit,

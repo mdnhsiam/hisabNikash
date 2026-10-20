@@ -1,6 +1,8 @@
 package com.hisabnikash.app.feature.transactions
 
 import com.hisabnikash.app.core.model.PaymentMethod
+import com.hisabnikash.app.core.model.TransactionType
+import com.hisabnikash.app.core.time.MonthKey
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -12,6 +14,26 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class TransactionListViewModelTest {
     @get:Rule val mainDispatcherRule = MainDispatcherRule()
+
+    @Test fun `dashboard drilldown filters type and Dhaka month while view all clears stale search`() = runTest {
+        val month = MonthKey(2026, 10)
+        val repository = FakeTransactionRepository()
+        repository.flow.value = listOf(
+            transaction("salary").copy(type = TransactionType.INCOME, occurredAtEpochMillis = month.startEpochMillis()),
+            transaction("expense").copy(occurredAtEpochMillis = month.startEpochMillis()),
+            transaction("old").copy(type = TransactionType.INCOME, occurredAtEpochMillis = month.startEpochMillis() - 1),
+            transaction("next").copy(type = TransactionType.INCOME, occurredAtEpochMillis = month.endExclusiveEpochMillis()),
+        )
+        val model = TransactionListViewModel(repository)
+        advanceUntilIdle()
+        model.setQuery("stale search")
+        model.setDashboardFilter(TransactionType.INCOME, month)
+        assertEquals(listOf("salary"), model.state.value.visibleTransactions.map { it.id })
+        model.setDashboardFilter(TransactionType.EXPENSE, month)
+        assertEquals(listOf("expense"), model.state.value.visibleTransactions.map { it.id })
+        model.setDashboardFilter(null, null)
+        assertEquals(setOf("salary", "expense", "old", "next"), model.state.value.visibleTransactions.map { it.id }.toSet())
+    }
 
     @Test
     fun `observes newest transactions and filters by query`() = runTest {
