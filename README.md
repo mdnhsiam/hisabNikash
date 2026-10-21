@@ -10,7 +10,7 @@ The generated ledger/checkmark logo is placed in the dashboard and Android launc
 
 The redesigned native UI is implemented and pushed: private-by-default Home with eye-to-reveal, readable offline Bangla typography, four navigation destinations and an expandable transaction sheet. Clean verification:171 tests, zero failures; debug/release lint zero issues. [UI review](docs/testing/minimal-ui-review-2026-10-21.md).
 
-The verified APK was delivered locally as `HisabNikash-0.1.4-test.apk`. **Its GitHub binary upload did not complete.** The older download below is0.1.3 and does not contain the redesign. Use the locally delivered0.1.4 APK or build this source; see the [exact artifact/checksum report](docs/testing/release-test-report.md). Install as an update without uninstalling or clearing data.
+Download [HisabNikash 0.1.4 test APK](https://github.com/mdnhsiam/hisabNikash/releases/download/v0.1.4-alpha.1/HisabNikash-0.1.4-test.apk) from the private [0.1.4 prerelease](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.4-alpha.1). Published on 2026-10-22 (Asia/Dhaka); GitHub's asset size and SHA256 match the verified local binary. Sign into a GitHub account with repository access. See the [exact artifact/checksum report](docs/testing/release-test-report.md). Install as an update without uninstalling or clearing data. This is a debug-signed test build, not production sign-off.
 
 ## Previous published closed-test build: 0.1.3
 
@@ -31,7 +31,7 @@ Build locally with Android Studio's bundled JDK:
 .\gradlew.bat --no-daemon '-Dorg.gradle.java.home=C:\Program Files\Android\Android Studio\jbr' clean testDebugUnitTest lintDebug assembleDebug
 ```
 
-See the dated [release test report](docs/testing/release-test-report.md) for the candidate version, checksum and executed checks. Source/local candidate0.1.4 is newer than published `v0.1.3-alpha.1`; GitHub binary publication remains incomplete. The older0.1.0/withdrawn0.1.2 builds are not current candidates.
+See the dated [release test report](docs/testing/release-test-report.md) for version, checksum and executed checks. The current published test build is `v0.1.4-alpha.1`; older0.1.0/withdrawn0.1.2 and previous0.1.3 builds are not current candidates.
 
 See [production readiness](docs/production-readiness-2026-10-09.md), [manual-release-checklist.md](docs/testing/manual-release-checklist.md), and [data-handling.md](docs/privacy/data-handling.md). Real-device restore, Google authorization and owner-controlled release signing are required before production sign-off; a passing build does not establish those results.
 

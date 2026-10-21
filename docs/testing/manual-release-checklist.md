@@ -17,7 +17,7 @@
 
 ## Distribution follow-through
 
-- [ ] Upload the verified0.1.4 APK to GitHub and verify remote digest. Browser upload failed; source is pushed, local APK is available. Do not confuse the published0.1.3 APK with the redesign.
+- [x] Upload the verified0.1.4 APK to GitHub and verify remote digest. Published private `v0.1.4-alpha.1` on 2026-10-22 (Asia/Dhaka); asset `663443714`, 16,822,054 bytes, SHA256 matches the verified local APK. See the release test report. Older releases remain unchanged.
 
 ## Real-device checks required before wider distribution
 
