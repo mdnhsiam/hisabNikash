@@ -1,36 +1,50 @@
 # Closed-test build report
 
-Date:2026-10-20 (Asia/Dhaka). Candidate:HisabNikash0.1.3/code4. Verified application source and release tag:`41a2b5976ed095fd00e7f0363f99c58f625d3380`. Later documentation commits do not change the binary.
+Date: 2026-10-21 (Asia/Dhaka). Candidate: HisabNikash 0.1.4, version code 5. Verified application source: `1d5cdb357e0772b3467aa56b057e55b1e9ca0669`. Later documentation commits do not change the binary.
 
-## Startup repair and verification
+## UI and privacy refresh
 
-The eager navigation singleton list captured a null destination during cold initialization. Deferred construction repairs the reproduced crash without changing ledger/schema/preferences, dependencies, package or signing configuration. [Diagnosis/review rulings](startup-crash-2026-10-20.md).
+The owner approved the simplified mint/forest design with offline Bangla typography, four primary destinations, expandable native transaction entry and hidden-by-default Home details. [Implementation, research and independent review](minimal-ui-review-2026-10-21.md).
 
-- Focused regressions:RED5tests/4failures from null navigation; parent-first control passed. After repair:GREEN5/5.
-- Complete clean suite:48suites,162tests,zero failures/errors/skips. Includes finance/SQLite/backup/branding coverage, real Application/MainActivity modeled API24/35/36 launch, API35/36 recreation, and each destination-first order in fresh class loaders.
-- Debug/release lint:passed,zero issues.
-- Instrumentation Kotlin compilation and test APK assembly:passed; Android tests NOT executed.
-- Debug and R8-minified unsigned release APK builds:passed.
-- Full clean gate with runtime inventory:BUILD SUCCESSFUL4m13s,149tasks (147executed,2up-to-date). Non-blocking kapt processor-option warnings remain. Release lint ran separately; redundant lint-vital tasks skipped.
-- Targeted logging/embedded-secret filename scans:no matches; not a full security audit.
-- Runtime:107selected Maven packages,0differences from reviewed inventory. [OSV refresh](../security/osv-runtime-2026-10-20.json) returned0known affected; not proof of no vulnerabilities. Snapshot SHA256:`a73eb28743bb72705cffd39667220c57441bf3eb69bbd2ded0a8d9fd0184fd29`.
-- APK:package `com.hisabnikash.app`,0.1.3/code4,minAPI24,targetAPI36. Debug v2 signature verifies; same certificate as0.1.2. Both APKs pass16K zip alignment. Release non-debuggable and unsigned as expected.
-- Independent scoped read-only review:ready to merge source repair; no Critical/Important/Minor findings. No production certification.
+Home monthly amounts and recent descriptions are absent from composition/accessibility semantics until the eye action reveals them. Reveal resets on pause/background or a fresh Home/Activity composition. This is display privacy, not authentication, screenshot blocking or encryption. Reports and Transactions remain deliberately accessible by navigation.
 
-No implementation changes followed the clean gate. Fresh device inventory was empty; emulator acceleration reports no installed hypervisor driver. No physical Nothing Phone3a launch, instrumentation execution or actual installed update/ledger preservation is claimed.
+Quick entry preserves drafts across resizing and Activity recreation; explicit discard clears input without changing the ledger. Unsaved system process-death recovery is not promised. Existing description/category/amount validation, one-off or reusable categories, duplicate checks and backup behavior remain. Date/note start collapsed; an invalid date keeps its recovery field visible.
 
-## Published artifact
+## Executed final gates
 
-- [Private replacement release](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.3-alpha.1)
-- [Download HisabNikash-0.1.3-test.apk](https://github.com/mdnhsiam/hisabNikash/releases/download/v0.1.3-alpha.1/HisabNikash-0.1.3-test.apk)
-- Local build:`app/build/outputs/apk/debug/app-debug.apk`
-- Size:16,459,283bytes
-- SHA256:`bad86f384119a042b1469fa975ce61606eba10d57ad1ce77749117ec7eed3faf`
-- Public debug certificate SHA256:`2db8c68906df844b71c7c03d186b5a8916f880548033d6d693fa0aa1610078c2`
-- Public debug certificate SHA1:`1b49ea24c0846d6c3ea477c0008cab56134577fc` (test OAuth only).
+- Full clean Gradle command: `clean testDebugUnitTest lintDebug lintRelease compileDebugAndroidTestKotlin assembleDebug assembleDebugAndroidTest assembleRelease --init-script scripts/runtime-inventory.init.gradle :app:writeReleaseRuntimeInventory`.
+- BUILD SUCCESSFUL in 3m27s; 149 tasks (147 executed, 2 up-to-date).
+- 49 suites, **171 tests, zero failures/errors/skips**. Includes existing finance/SQLite/migration/backup/branding coverage and new Home privacy/accessibility/lifecycle, route cold-start, drilldown, real Activity recreation and draft/date regressions.
+- Debug and release lint: **zero issues** in both XML reports.
+- Instrumentation source compilation and test APK build: passed; actual Android instrumentation **not executed**.
+- Debug and R8-minified unsigned release APK builds: passed. Redundant lint-vital tasks skipped because release lint ran separately.
+- Non-blocking kapt processor-option warnings remain; no warning suppression was added.
+- Independent read-only review: no Critical/Important findings; one Minor invalid-date recovery issue reproduced RED (1 test/1 failure), repaired and covered by the complete final green suite.
+- First full run passed 170 tests but failed lint on indentation and an unused old resource. Both were repaired before the successful clean rerun, not suppressed.
+- Runtime inventory: 107 selected Maven packages; zero differences from the reviewed inventory. [OSV response](../security/osv-runtime-2026-10-21.json) returned zero known affected packages. Snapshot SHA256: `7ad052329f58474b27e3f3aba82c202eb7bee9dc44927fd3ccd4d388221380aa`. Not proof of no vulnerabilities.
+- Targeted filename-only production logging/embedded-secret scans: no matches; not a full security audit.
+- APK checks: package `com.hisabnikash.app`, version 0.1.4/code5, min API24, target API36; debug v2 signature verifies with the previous certificate. Both APKs pass16K zip alignment. Release is non-debuggable and unsigned as expected.
 
-GitHub asset657557786 reports matching digest/size. Published pre-release, not production deployment. Install over the existing app without uninstall/data clearing. Matching package/certificate and higher code support intended compatibility, not an installed-phone result.
+No implementation changes followed the final clean run. Native Robolectric renders of hidden/revealed Home, Bangla at200% text, More and partial/expanded entry were inspected. These are not phone screenshots or a usability study.
 
-Following explicit action-time owner confirmation, only asset628873383 (`HisabNikash-0.1.2-test.apk`) was deleted from release `v0.1.2-alpha.1`, now marked WITHDRAWN. GitHub metadata confirms its assets list is empty. Tag/release/source history remain, as does local rollback copy `C:/Users/user/Documents/new Try/HisabNikash-0.1.2-test.apk`. GitHub has no restore button, but the local file could be re-uploaded.0.1.0 was not touched. Historical0.1.2 report remains in Git history.
+A fresh handoff rerun of the complete `testDebugUnitTest` task (task-level `--rerun`, not cached test execution) also passed in1m9s on the unchanged application source after the browser upload failure.
 
-Real-device, actual folder/Drive restore, OAuth and owner signing gates remain open in the [manual checklist](manual-release-checklist.md) and [readiness assessment](../production-readiness-2026-10-09.md). Automated success does not establish zero defects.
+## Artifact and publication status
+
+- Built APK: `app/build/outputs/apk/debug/app-debug.apk`
+- Owner's local copy: `C:/Users/user/Documents/new Try/HisabNikash-0.1.4-test.apk`
+- Size: **16,822,054 bytes**
+- SHA256: `7db0dbd8b5d17bb5edef1d12506011fe6f50d00df3dcfab279f7c7df9ea85192`
+- Public debug certificate SHA256: `2db8c68906df844b71c7c03d186b5a8916f880548033d6d693fa0aa1610078c2`
+- Public debug certificate SHA1: `1b49ea24c0846d6c3ea477c0008cab56134577fc` (test OAuth only).
+- Source commit1d5cdb3 was pushed to GitHub main.
+
+**GitHub binary publication is incomplete.** The browser file-chooser upload failed and its release-form tab was no longer available. A fresh GitHub releases read confirms no0.1.4 release/asset. The prepared title/notes/tag selection were not proof of publication. No second upload was attempted after this failure. The existing [0.1.3 release](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.3-alpha.1) remains intact and does **not** contain this redesigned UI. Do not present its download as0.1.4.
+
+Install the verified local0.1.4 APK over the existing app; do not uninstall or clear data. Matching package/certificate and a higher version support intended compatibility, but actual phone update/ledger preservation is not verified. If Android rejects the update, stop rather than uninstalling unbacked-up data. No phone data was changed by this task. No previous APK was deleted.
+
+## Open release gates
+
+Fresh adb inventory is empty; emulator acceleration reports no installed hypervisor driver. Actual phone IME/drag/TalkBack/OEM rendering, minimum-OS full sheet/font interaction, installed update, real folder/Drive restore, Google OAuth and owner-controlled production signing remain unverified. No system security setting or paid CI was enabled. [Manual checklist](manual-release-checklist.md), [production readiness](../production-readiness-2026-10-09.md).
+
+This debug-signed candidate is not production certification or a zero-bugs guarantee.

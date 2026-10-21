@@ -1,5 +1,12 @@
 # HisabNikash production security assessment
 
+## 2026-10-21 UI candidate refresh
+
+Current source/local candidate is0.1.4/code5 at `1d5cdb357e0772b3467aa56b057e55b1e9ca0669`:171 tests/49 suites, zero failures/errors/skips; debug/release lint zero issues; instrumentation compilation and debug/minified unsigned release builds passed. Independent UI review had no Critical/Important findings; one Minor date-recovery issue was repaired RED→GREEN. Runtime107 packages unchanged; dated OSV query returned no known affected package. This is not a new penetration test or security certification. Home hide/reveal is display privacy, not authentication/encryption/screenshot blocking. Actual device/IME/TalkBack/update, OAuth/restore and owner-signing gates remain open. Source is pushed, but GitHub0.1.4 binary upload failed; only the verified local APK is available. [Exact current report](testing/release-test-report.md), [review/limitations](testing/minimal-ui-review-2026-10-21.md).
+
+The older assessment below is historical; its candidate versions/test counts are not the latest result.
+
+
 ## 2026-10-20 startup-repair refresh
 
 Current candidate0.1.3/code4 at `41a2b5976ed095fd00e7f0363f99c58f625d3380` changes only navigation initialization/version in production code, not storage/network/dependencies. Clean162-test/48-suite,zero-lint,instrumentation-compilation and both-build gates passed. Targeted scans had no matches. [Current report](testing/release-test-report.md). [OSV refresh](security/osv-runtime-2026-10-20.json): unchanged107 packages,0 known affected; SHA256 `a73eb28743bb72705cffd39667220c57441bf3eb69bbd2ded0a8d9fd0184fd29`. Not a new security audit or penetration test.0.1.2 is withdrawn;0.1.3 is debug-signed closed-test only. Device/OAuth/signing gates remain open. The following assessment records earlier checkpoints; historical157-test counts are not current suite counts.
