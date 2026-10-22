@@ -4,7 +4,7 @@
 
 Owner approved the bounded 0.1.5/code6 UI adjustment: monthly totals visible from entry; only recent entries require local reveal; larger mint summary with stronger financial typography; functional More shortcuts. Existing native partial/expanded QuickEntrySheet and all financial/storage behavior remain unchanged. Offline packaged Noto Sans Bengali remains the default until the owner selects a font from the comparison. Preview alternatives are not bundled in the Android release.
 
-Published GitHub test download remains 0.1.4. The 0.1.5 source/local candidate is not the same binary; its publication must be explicitly recorded after upload and remote digest verification. No existing release APK is overwritten.
+Published GitHub test download is now [0.1.5-alpha.1](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.5-alpha.1), with remote size/digest verified against the local APK. [Current verification report](ui-polish-2026-10-23.md). No existing release APK was overwritten.
 
 ## Remaining setup and acceptance gates
 
@@ -12,7 +12,7 @@ Published GitHub test download remains 0.1.4. The 0.1.5 source/local candidate i
 | --- | --- | --- |
 | Font choice and UI acceptance | Choose Noto Sans Bengali, Hind Siliguri or Anek Bangla; inspect actual phone at normal/200% text, small width and landscape | Browser font specimens are real fonts, not Android/device screenshots. Current app uses strengthened packaged Noto typography. |
 | Physical phone update | USB-debugging connection approved on the owner phone; update without uninstall/data clear; launch and verify existing ledger | Latest adb inventory empty. Nothing Phone3a/Android16 results must be recorded, not inferred from JVM tests. |
-| Google authorization | Owner-selected Cloud project, enabled Drive API, consent configuration, test accounts and Android package/certificate client | Android AuthorizationClient and drive.appdata transport exist; owner Cloud configuration has not been inspected or changed. See runbook below. |
+| Google authorization | Dedicated Cloud project, enabled Drive API, consent configuration, test accounts and Android package/certificate client | On the owner's explicit follow-up, created `hisabnikash-512420` (HisabNikash) in the signed-in owner's existing organization. OAuth/consent setup is still incomplete. See current Cloud status and runbook below. |
 | Backup and restore | Create encrypted folder/Drive snapshot; restore on a spare/test installation; test wrong password, permission revocation and low storage | Fake transport/JVM coverage does not establish provider/OAuth/device correctness. Never uninstall unbacked-up real data. |
 | Device UI/accessibility | Partial/full sheet drag, keyboard insets, TalkBack, rotation, long amounts, Bangla/English, notification actions and month boundary | Native Robolectric renders/tests are useful but not physical-device certification. |
 | Production signing | Owner creates and securely backs up a production signing key; register that actual certificate for OAuth | Debug-signed test APK only. Different signing keys cannot update each other; verify external restore before any migration. Never commit the key/password. |
@@ -44,4 +44,10 @@ This app authorizes optional Drive backup, not a mandatory app login. Keep offli
 
 As checked on 2026-10-23, Google documents standard Drive API use at no additional cost, but also describes planned quota-overage charges later in 2026. This is **not** an unconditional forever-free guarantee. Keep billing/paid overage disabled and inspect the selected project's current quotas before wider rollout. User Drive storage remains subject to that user's account quota. [Current Drive usage/pricing policy](https://developers.google.com/workspace/drive/api/guides/limits).
 
-No Cloud project, OAuth client, Google consent, billing, permission expansion or remote backup was created by this UI task.
+## Owner-requested Cloud follow-up
+
+After the verified UI release was published, the owner explicitly requested a new project through Chrome instead of reusing an existing project. Created **HisabNikash**, project ID `hisabnikash-512420`, project number `421798698404`, in the currently signed-in owner's existing organization. Console's finished creation notification and selected-project Welcome page were verified. The project's Billing → Linked account page explicitly reports **This project has no billing account** and **This project is not linked to a billing account**. No extra IAM grants, paid services, billing link or account credential changes were made by the agent. OAuth client/consent and remote backup are not yet complete.
+
+Google Drive API was enabled and its API/Service Details page verified `Status: Enabled`. No billing account, card, free-trial payment setup or paid quota increase was added. OAuth branding is paused at App Information pending owner approval of the support/developer contact email; no Android OAuth client has been created. The owner's latest instruction explicitly prohibits billing/cards.
+
+Creating the project and enabling the API is not Drive authorization or proof of a working backup. Subsequent security-sensitive OAuth client/access configuration needs explicit action-time confirmation; Google terms acceptance and the user's actual Google data consent remain owner actions.

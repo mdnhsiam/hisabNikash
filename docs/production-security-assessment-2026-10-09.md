@@ -1,6 +1,6 @@
 # HisabNikash production security assessment
 
-2026-10-23: source follow-up0.1.5/code6 shows monthly totals by default and hides only recent entries. This intentionally changes display privacy, not authentication or storage encryption. Published APK remains0.1.4; current setup gates: [setup audit](testing/setup-status-2026-10-23.md). No new penetration test/security certification is implied.
+2026-10-23: source follow-up0.1.5/code6 shows monthly totals by default and hides only recent entries. This intentionally changes display privacy, not authentication or storage encryption. Published test APK is now0.1.5 (verified remote size/digest); current setup gates: [setup audit](testing/setup-status-2026-10-23.md). No new penetration test/security certification is implied.
 
 ## 2026-10-21 UI candidate refresh
 

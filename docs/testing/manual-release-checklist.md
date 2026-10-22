@@ -1,6 +1,6 @@
 # HisabNikash closed-test checklist
 
-Current source candidate: 0.1.5/code6; published APK: 0.1.4/code5. [2026-10-23 setup audit and OAuth runbook](setup-status-2026-10-23.md). Earlier evidence below is dated; it does not substitute for candidate/device checks.
+Current published test candidate:0.1.5/code6. [2026-10-23 setup audit and OAuth runbook](setup-status-2026-10-23.md), [174-test clean verification and published artifact](ui-polish-2026-10-23.md). Earlier evidence below is dated; it does not substitute for candidate/device checks.
 
 ## Automated evidence
 
