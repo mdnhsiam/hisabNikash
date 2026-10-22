@@ -1,5 +1,7 @@
 # HisabNikash release readiness
 
+2026-10-23: source follow-up0.1.5/code6 revises Home to show monthly totals while hiding only recent entries. Published GitHub APK remains0.1.4. Current owner/device/OAuth/signing gates and runbook: [setup audit](testing/setup-status-2026-10-23.md). The dated0.1.4 results below are historical, not a fresh candidate certification.
+
 ## 2026-10-21 UI candidate refresh
 
 Current published test candidate is0.1.4/code5 at `1d5cdb357e0772b3467aa56b057e55b1e9ca0669`:171 tests/49 suites, zero failures/errors/skips; debug/release lint zero issues; instrumentation compilation and debug/minified unsigned release builds passed. Independent UI review had no Critical/Important findings; one Minor date-recovery issue was repaired RED→GREEN. Runtime107 packages unchanged; dated OSV query returned no known affected package. This is not a new penetration test or security certification. Home hide/reveal is display privacy, not authentication/encryption/screenshot blocking. Actual device/IME/TalkBack/update, OAuth/restore and owner-signing gates remain open. The unchanged APK was published as private [v0.1.4-alpha.1](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.4-alpha.1) on 2026-10-22 (Asia/Dhaka); remote size/digest match the verified local APK. Publication is not production certification. [Exact current report](testing/release-test-report.md), [review/limitations](testing/minimal-ui-review-2026-10-21.md).

@@ -1,4 +1,6 @@
-# HisabNikash 0.1.4 closed-test checklist
+# HisabNikash closed-test checklist
+
+Current source candidate: 0.1.5/code6; published APK: 0.1.4/code5. [2026-10-23 setup audit and OAuth runbook](setup-status-2026-10-23.md). Earlier evidence below is dated; it does not substitute for candidate/device checks.
 
 ## Automated evidence
 
@@ -21,10 +23,10 @@
 
 ## Real-device checks required before wider distribution
 
-- [ ] Verify Home starts hidden, eye reveals/hides both totals and descriptions, and background/recreation/navigation resets visibility. Check TalkBack does not announce hidden details. This is not an app lock.
+- [ ] On0.1.5 verify monthly totals are visible from launch without a global eye button. Only recent transactions require local show/hide; background/recreation/navigation re-hide those entries. TalkBack must not announce hidden entries. This is not an app lock.
 - [ ] Test partial/full sheet by drag and labeled controls, actual keyboard insets, large text and landscape. Test cancel/discard, invalid date recovery, failed save, duplicate warning and rotation. Unsaved system-process-death draft recovery is not promised.
 
-- [ ] On Nothing Phone3a/Android16 install0.1.4 over0.1.3 without uninstall/data clear; verify launch, recreation and existing ledger preservation. Capture the actual crash log if failure persists.
+- [ ] On Nothing Phone3a/Android16 install the verified candidate over the existing app without uninstall/data clear; verify launch, recreation and existing ledger preservation. Capture the actual crash log if failure persists.
 
 - [ ] Verify launcher appearance under the device's standard/themed icon settings and dashboard branding in Bangla/English with large text and TalkBack.
 - [ ] Airplane mode: add/edit/delete transactions and confirm dashboard/report updates.

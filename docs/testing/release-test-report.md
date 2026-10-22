@@ -1,5 +1,7 @@
 # Closed-test build report
 
+Historical published0.1.4 evidence below. Current source follow-up is0.1.5/code6 with totals visible and only recent entries hidden; see the [2026-10-23 setup audit](setup-status-2026-10-23.md). Do not confuse source/local follow-up with the0.1.4 GitHub APK.
+
 Date: 2026-10-21 (Asia/Dhaka). Candidate: HisabNikash 0.1.4, version code 5. Verified application source: `1d5cdb357e0772b3467aa56b057e55b1e9ca0669`. Later documentation commits do not change the binary.
 
 ## UI and privacy refresh

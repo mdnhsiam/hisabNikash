@@ -3,7 +3,7 @@ package com.hisabnikash.app.feature.dashboard
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import com.hisabnikash.app.captureUi
 import com.hisabnikash.app.core.time.MonthKey
@@ -27,7 +27,7 @@ class DashboardBrandingTest {
         compose.onNodeWithText("HisabNikash").assertIsDisplayed()
         compose.onNodeWithText("Your month at a glance").assertIsDisplayed()
         compose.runOnIdle { captureUi("home-hidden-en") }
-        compose.onNodeWithContentDescription("Show dashboard details").performClick()
+        compose.onNodeWithText("Show transactions").performScrollTo().performClick()
         compose.runOnIdle { captureUi("home-revealed-en") }
         // PixelCopy's forced frame wait is unavailable in Robolectric's offscreen
         // window. Draw the actual laid-out view hierarchy using native graphics.

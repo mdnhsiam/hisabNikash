@@ -6,7 +6,13 @@ Bangla-first, offline-first personal income and expense tracking for Android. Th
 
 The generated ledger/checkmark logo is placed in the dashboard and Android launcher. [Logo source, generation prompts and placement](docs/branding/logo-generation.md), [branding review and regression evidence](docs/branding/review-and-verification.md).
 
-## Current UI candidate: 0.1.4
+## Current source candidate: 0.1.5
+
+The owner-approved follow-up keeps monthly remainder/income/expense visible from launch, hides only recent transactions behind a local show/hide action, strengthens financial typography and adds direct More shortcuts. Packaged offline Noto remains the default pending the owner's font choice. The previous half/full native transaction sheet remains unchanged. [Setup audit and Google OAuth runbook](docs/testing/setup-status-2026-10-23.md).
+
+The GitHub APK linked below is still **0.1.4**, not this follow-up. A local/source candidate is not a published APK or production approval.
+
+## Published closed-test build: 0.1.4
 
 The redesigned native UI is implemented and pushed: private-by-default Home with eye-to-reveal, readable offline Bangla typography, four navigation destinations and an expandable transaction sheet. Clean verification:171 tests, zero failures; debug/release lint zero issues. [UI review](docs/testing/minimal-ui-review-2026-10-21.md).
 

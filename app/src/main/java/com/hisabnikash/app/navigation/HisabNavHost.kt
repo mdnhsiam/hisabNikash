@@ -100,6 +100,8 @@ fun HisabNavHost(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentPath = backStackEntry?.destination?.route ?: Route.Dashboard.path
     var showQuickEntry by rememberSaveable { mutableStateOf(false) }
+    var settingsStartAtBackup by rememberSaveable { mutableStateOf(false) }
+    var savingsStartAtGoals by rememberSaveable { mutableStateOf(false) }
     var showDuplicateWarning by remember { mutableStateOf(false) }
     var duplicateMatch by remember { mutableStateOf<com.hisabnikash.app.core.model.Transaction?>(null) }
     val scope = rememberCoroutineScope()
@@ -291,8 +293,22 @@ fun HisabNavHost(
             }
             composable(Route.More.path) {
                 MoreScreen(
-                    onBudgetsAndGoals = { navController.navigate(Route.Savings.path) { launchSingleTop = true } },
-                    onSettings = { navController.navigate(Route.Settings.path) { launchSingleTop = true } },
+                    onBudgetsAndGoals = {
+                        savingsStartAtGoals = false
+                        navController.navigate(Route.Savings.path) { launchSingleTop = true }
+                    },
+                    onGoals = {
+                        savingsStartAtGoals = true
+                        navController.navigate(Route.Savings.path) { launchSingleTop = true }
+                    },
+                    onSettings = {
+                        settingsStartAtBackup = false
+                        navController.navigate(Route.Settings.path) { launchSingleTop = true }
+                    },
+                    onBackup = {
+                        settingsStartAtBackup = true
+                        navController.navigate(Route.Settings.path) { launchSingleTop = true }
+                    },
                 )
             }
             composable(Route.Transactions.path) {
@@ -315,19 +331,30 @@ fun HisabNavHost(
                 Column(
                     modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
                 ) {
-                    BudgetScreen(
-                        state = budgetState,
-                        onSave = budgetViewModel::saveBudget,
-                        onDelete = budgetViewModel::delete,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    SavingsScreen(
-                        state = savingsState,
-                        onCreateGoal = savingsViewModel::createGoal,
-                        onAllocate = savingsViewModel::allocate,
-                        onReverse = savingsViewModel::reverse,
-                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                    )
+                    val budgets: @Composable () -> Unit = {
+                        BudgetScreen(
+                            state = budgetState,
+                            onSave = budgetViewModel::saveBudget,
+                            onDelete = budgetViewModel::delete,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    val goals: @Composable () -> Unit = {
+                        SavingsScreen(
+                            state = savingsState,
+                            onCreateGoal = savingsViewModel::createGoal,
+                            onAllocate = savingsViewModel::allocate,
+                            onReverse = savingsViewModel::reverse,
+                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                        )
+                    }
+                    if (savingsStartAtGoals) {
+                        goals()
+                        budgets()
+                    } else {
+                        budgets()
+                        goals()
+                    }
                 }
             }
             composable(Route.Settings.path) {
@@ -336,6 +363,7 @@ fun HisabNavHost(
                 val backupMessage by settingsViewModel.backupMessage.collectAsState()
                 val settingsCategories by settingsViewModel.categories.collectAsState()
                 SettingsScreen(
+                    startAtBackup = settingsStartAtBackup,
                     state = settingsState,
                     onLanguageChange = { language ->
                         settingsViewModel.setLanguage(language) { (context as? Activity)?.recreate() }

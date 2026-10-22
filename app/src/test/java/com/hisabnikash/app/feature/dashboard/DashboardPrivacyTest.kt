@@ -16,7 +16,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** Catches initial exposure, visual-only masks and reveal state leaking across app backgrounding. */
+/** Catches hidden balances, exposed recent entries and reveal state leaking across backgrounding. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "en")
 class DashboardPrivacyTest {
@@ -38,29 +38,35 @@ class DashboardPrivacyTest {
     @Test fun `initial dashboard contains no private transaction text even in unmerged accessibility tree`() {
         open()
         compose.onNodeWithText("Private purchase 1", useUnmergedTree = true).assertDoesNotExist()
-        compose.onAllNodes(hasText("26,500", substring = true), useUnmergedTree = true).assertCountEquals(0)
-        compose.onNodeWithContentDescription("Show dashboard details").assertIsDisplayed()
+        compose.onNode(hasText("26,500", substring = true)).assertIsDisplayed()
+        compose.onNode(hasText("45,000", substring = true)).performScrollTo().assertIsDisplayed()
+        compose.onNode(hasText("18,500", substring = true)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Show dashboard details").assertDoesNotExist()
+        compose.onNodeWithText("Show transactions").performScrollTo().assertIsDisplayed()
     }
 
     @Test fun `explicit reveal shows three recent entries and hide removes their semantics`() {
         open()
-        compose.onNodeWithContentDescription("Show dashboard details").performClick()
+        compose.onNodeWithText("Show transactions").performScrollTo().performClick()
         compose.onNodeWithText("Private purchase 1").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Private purchase 3").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Private purchase 4", useUnmergedTree = true).assertDoesNotExist()
-        compose.onNodeWithContentDescription("Hide dashboard details").performScrollTo().performClick()
+        compose.onNodeWithText("Hide transactions").performScrollTo().performClick()
         compose.onNodeWithText("Private purchase 1", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNode(hasText("26,500", substring = true)).performScrollTo().assertIsDisplayed()
     }
 
     @Test fun `background and recreation require a fresh explicit reveal`() {
         open()
-        compose.onNodeWithContentDescription("Show dashboard details").performClick()
+        compose.onNodeWithText("Show transactions").performScrollTo().performClick()
         compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
         compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
         compose.onNodeWithText("Private purchase 1", useUnmergedTree = true).assertDoesNotExist()
-        compose.onNodeWithContentDescription("Show dashboard details").performClick()
+        compose.onNode(hasText("26,500", substring = true)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Show transactions").performScrollTo().performClick()
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithText("Private purchase 1", useUnmergedTree = true).assertDoesNotExist()
-        compose.onNodeWithContentDescription("Show dashboard details").assertIsDisplayed()
+        compose.onNode(hasText("26,500", substring = true)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Show transactions").performScrollTo().assertIsDisplayed()
     }
 }

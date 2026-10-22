@@ -13,20 +13,38 @@ import androidx.compose.ui.unit.dp
 import com.hisabnikash.app.R
 
 @Composable
-fun MoreScreen(onBudgetsAndGoals: () -> Unit, onSettings: () -> Unit) {
+fun MoreScreen(
+    onBudgetsAndGoals: () -> Unit,
+    onSettings: () -> Unit,
+    onGoals: () -> Unit = onBudgetsAndGoals,
+    onBackup: () -> Unit = onSettings,
+    onLanguage: () -> Unit = onSettings,
+) {
     val context = LocalContext.current
     var license by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.nav_more), style = MaterialTheme.typography.headlineMedium)
         ListItem(
-            headlineContent = { Text(stringResource(R.string.budgets_and_goals)) },
+            headlineContent = { Text(stringResource(R.string.budget_shortcut)) },
             leadingContent = { NavigationGlyph(Route.Savings) }, trailingContent = { Text("›") },
             modifier = Modifier.clickable(onClick = onBudgetsAndGoals),
         )
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.savings_goals)) },
+            leadingContent = { NavigationGlyph(Route.Savings) }, trailingContent = { Text("›") },
+            modifier = Modifier.clickable(onClick = onGoals),
+        )
         HorizontalDivider()
         ListItem(
+            headlineContent = { Text(stringResource(R.string.backup_title)) },
+            trailingContent = { Text("›") }, modifier = Modifier.clickable(onClick = onBackup),
+        )
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.language)) },
+            trailingContent = { Text("›") }, modifier = Modifier.clickable(onClick = onLanguage),
+        )
+        ListItem(
             headlineContent = { Text(stringResource(R.string.settings_title)) },
-            supportingContent = { Text(stringResource(R.string.backup_title) + " · " + stringResource(R.string.language)) },
             leadingContent = { NavigationGlyph(Route.Settings) }, trailingContent = { Text("›") },
             modifier = Modifier.clickable(onClick = onSettings),
         )

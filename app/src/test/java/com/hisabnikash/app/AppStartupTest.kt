@@ -8,6 +8,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performScrollTo
 import org.junit.Assert.assertTrue
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Rule
@@ -52,7 +53,6 @@ class AppStartupTest {
 
     @Test @Config(sdk = [35])
     fun `revealed income opens a labeled drilldown and view all restores the normal list`() {
-        compose.onNodeWithContentDescription(compose.activity.getString(R.string.show_dashboard_details)).performClick()
         compose.onNodeWithText(compose.activity.getString(R.string.income)).performClick()
         compose.onNodeWithText(compose.activity.getString(R.string.view_all)).assertIsDisplayed().performClick()
         compose.onNodeWithText(compose.activity.getString(R.string.search_transactions)).assertIsDisplayed()
@@ -61,8 +61,8 @@ class AppStartupTest {
     @Test @Config(sdk = [35])
     fun `more keeps secondary features reachable and draft survives expand collapse and cancelled dismiss`() {
         compose.onNodeWithText(compose.activity.getString(R.string.nav_more)).performClick()
-        compose.onNodeWithText(compose.activity.getString(R.string.budgets_and_goals)).assertIsDisplayed()
-        compose.onNodeWithText(compose.activity.getString(R.string.settings_title)).assertIsDisplayed()
+        compose.onNodeWithText(compose.activity.getString(R.string.budget_shortcut)).assertIsDisplayed()
+        compose.onNodeWithText(compose.activity.getString(R.string.settings_title)).performScrollTo().assertIsDisplayed()
         compose.runOnIdle { captureUi("more-bn") }
         compose.onNodeWithText(compose.activity.getString(R.string.nav_dashboard)).performClick()
         compose.onNodeWithContentDescription(compose.activity.getString(R.string.add_transaction)).performClick()
@@ -91,9 +91,16 @@ class AppStartupTest {
 
     private fun assertDashboard() {
         compose.onNodeWithText(compose.activity.getString(R.string.dashboard_title)).assertIsDisplayed()
-        compose.onNodeWithContentDescription(compose.activity.getString(R.string.show_dashboard_details)).assertIsDisplayed()
+        compose.onNodeWithText(compose.activity.getString(R.string.monthly_remainder)).assertIsDisplayed()
         for (label in listOf(R.string.nav_dashboard, R.string.nav_transactions, R.string.nav_reports, R.string.nav_more)) {
             compose.onNodeWithText(compose.activity.getString(label)).assertIsDisplayed()
         }
+    }
+
+    @Test @Config(sdk = [35])
+    fun `backup shortcut opens its controls without manual settings scrolling`() {
+        compose.onNodeWithText(compose.activity.getString(R.string.nav_more)).performClick()
+        compose.onNodeWithText(compose.activity.getString(R.string.backup_title)).performScrollTo().performClick()
+        compose.onNodeWithText(compose.activity.getString(R.string.choose_backup_folder)).assertIsDisplayed()
     }
 }

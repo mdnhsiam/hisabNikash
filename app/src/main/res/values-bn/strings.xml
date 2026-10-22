@@ -152,12 +152,8 @@
     <string name="drive_backup_setup_required">রিস্টোরের জন্য Drive যুক্ত হয়েছে — ব্যাকআপ সেটআপ অসম্পূর্ণ। প্রথম কপি সেভ ও স্বয়ংক্রিয় ব্যাকআপ চালু করতে পাসওয়ার্ড দিয়ে Drive-এ ব্যাকআপ নিন।</string>
     <string name="drive_backup_ready">এনক্রিপ্টেড Drive ব্যাকআপ সেটআপ হয়েছে। পাসওয়ার্ড নিরাপদে রাখুন এবং নিয়মিত ব্যাকআপ যাচাই করুন।</string>
     <string name="nav_more">আরও</string>
-    <string name="show_dashboard_details">হিসাব দেখুন</string>
-    <string name="hide_dashboard_details">হিসাব লুকান</string>
     <string name="monthly_remainder">এই মাসে অবশিষ্ট</string>
     <string name="monthly_remainder_help">লেখা আয় থেকে খরচ বাদ দিয়ে — এটি অ্যাকাউন্টের ব্যালেন্স নয়।</string>
-    <string name="details_private">আপনার হিসাব আড়ালে আছে</string>
-    <string name="details_private_help">এই মাসের হিসাব ও সাম্প্রতিক লেনদেন দেখতে চোখের বোতাম চাপুন।</string>
     <string name="recent_transactions_hidden">সাম্প্রতিক লেনদেন লুকানো আছে।</string>
     <string name="view_all">সব দেখুন</string>
     <string name="date_and_note">তারিখ ও নোট</string>
@@ -168,7 +164,9 @@
     <string name="discard_entry_message">সেভ না করা পরিবর্তন হারিয়ে যাবে।</string>
     <string name="discard_entry">বাতিল করুন</string>
     <string name="keep_editing">লেখা চালিয়ে যান</string>
-    <string name="budgets_and_goals">বাজেট ও সঞ্চয়</string>
-    <string name="privacy_display_help">Home খুললে এবং অ্যাপ থেকে বের হলে হিসাব লুকানো থাকে। এটি অ্যাপ লক নয়।</string>
+    <string name="privacy_display_help">মাসিক হিসাব দেখা যায়। সাম্প্রতিক লেনদেন খুলে না দেখা পর্যন্ত আড়ালে থাকে এবং অ্যাপ থেকে বের হলে আবার লুকিয়ে যায়। এটি অ্যাপ লক নয়।</string>
+    <string name="show_recent_transactions">লেনদেন দেখুন</string>
+    <string name="hide_recent_transactions">লেনদেন লুকান</string>
+    <string name="budget_shortcut">বাজেট</string>
     <string name="font_licenses">ফন্ট লাইসেন্স</string>
 </resources>
