@@ -19,6 +19,7 @@ fun TransactionRow(transaction: Transaction, modifier: Modifier = Modifier) {
         Text(transaction.description, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(end = 8.dp), maxLines = 2)
         Text(
             text = (if (transaction.type == TransactionType.EXPENSE) "−" else "+") + MoneyFormatter.formatMinorUnits(transaction.amountMinor),
+            style = MaterialTheme.typography.titleMedium,
             color = if (transaction.type == TransactionType.EXPENSE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
         )
     }

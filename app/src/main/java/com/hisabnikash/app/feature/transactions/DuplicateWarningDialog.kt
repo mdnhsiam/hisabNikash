@@ -19,7 +19,7 @@ fun DuplicateWarningDialog(existing: Transaction, onSaveAnyway: () -> Unit, onCa
         text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.possible_duplicate_message))
             Text(existing.description, style = MaterialTheme.typography.titleMedium)
-            Text(MoneyFormatter.formatMinorUnits(existing.amountMinor))
+            Text(MoneyFormatter.formatMinorUnits(existing.amountMinor), style = MaterialTheme.typography.titleMedium)
             Text(existing.paymentMethod.localizedLabel())
             Text(java.time.Instant.ofEpochMilli(existing.occurredAtEpochMillis).atZone(MonthKey.DHAKA).toLocalDate().toString())
         } },

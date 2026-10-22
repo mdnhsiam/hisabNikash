@@ -51,7 +51,12 @@ fun MoreScreen(
         Text(stringResource(R.string.privacy_display_help), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         TextButton(onClick = {
-            license = context.assets.open("licenses/noto_sans_bengali_OFL.txt").bufferedReader().use { it.readText() }
+            license = listOf(
+                "Hind Siliguri" to "hind_siliguri_OFL.txt",
+                "Noto Sans Bengali" to "noto_sans_bengali_OFL.txt",
+            ).joinToString("\n\n") { (family, asset) ->
+                family + "\n\n" + context.assets.open("licenses/$asset").bufferedReader().use { it.readText() }
+            }
         }) { Text(stringResource(R.string.font_licenses)) }
     }
     license?.let { text ->

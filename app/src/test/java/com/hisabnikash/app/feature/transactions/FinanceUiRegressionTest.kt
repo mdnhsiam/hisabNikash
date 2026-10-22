@@ -20,6 +20,24 @@ class FinanceUiRegressionTest {
     private val expense = Transaction("bill", TransactionType.EXPENSE, 1000, "Lunch", food.id,
         paymentMethod = PaymentMethod.CASH, occurredAtEpochMillis = 1, createdAtEpochMillis = 1)
 
+    @Test fun `history amounts use emphasized display font rather than prose defaults`() {
+        compose.setContent { HisabTheme { TransactionListScreen(
+            TransactionListState(listOf(expense), categories = mapOf(food.id to food)),
+            onQueryChange = {}, onUpdate = { false }, onDelete = { _, _ -> false }) } }
+        val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        compose.onNode(hasText("−", substring = true), useUnmergedTree = true).performSemanticsAction(
+            androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult,
+        ) { action -> action(layouts) }
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals(
+                com.hisabnikash.app.ui.theme.HisabTypography.titleSmall.fontFamily,
+                layouts.single().layoutInput.style.fontFamily,
+            )
+            org.junit.Assert.assertEquals(androidx.compose.ui.text.font.FontWeight.SemiBold,
+                layouts.single().layoutInput.style.fontWeight)
+        }
+    }
+
     @Test fun `duplicate warning identifies the suspected transaction`() {
         compose.setContent { HisabTheme { DuplicateWarningDialog(expense, {}, {}) } }
         compose.onNodeWithText("Lunch").assertExists()

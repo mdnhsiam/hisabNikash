@@ -51,7 +51,7 @@ fun SavingsScreen(
                     style = MaterialTheme.typography.headlineSmall,
                     color = if (state.monthlySavingsMinor < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 )
-                Text(stringResource(R.string.available_for_goals, MoneyFormatter.formatMinorUnits(state.availableMinor)))
+                Text(stringResource(R.string.available_for_goals, MoneyFormatter.formatMinorUnits(state.availableMinor)), style = MaterialTheme.typography.titleMedium)
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -64,7 +64,7 @@ fun SavingsScreen(
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(goal.name, style = MaterialTheme.typography.titleMedium)
-                    Text(MoneyFormatter.formatMinorUnits(progress))
+                    Text(MoneyFormatter.formatMinorUnits(progress), style = MaterialTheme.typography.titleMedium)
                     goal.targetMinor?.let { target ->
                         LinearProgressIndicator(progress = { (progress.toFloat() / target).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                     }

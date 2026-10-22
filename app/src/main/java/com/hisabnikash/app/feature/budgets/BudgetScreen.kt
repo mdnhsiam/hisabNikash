@@ -47,14 +47,14 @@ fun BudgetScreen(
             state.totalBudget?.let { budget ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(stringResource(R.string.total_budget), Modifier.weight(1f))
-                    Text(MoneyFormatter.formatMinorUnits(budget.amountMinor))
+                    Text(MoneyFormatter.formatMinorUnits(budget.amountMinor), style = MaterialTheme.typography.titleMedium)
                     TextButton(onClick = { onDelete(budget.id) }) { Text(stringResource(R.string.delete)) }
                 }
             }
             state.categoryBudgets.forEach { budget ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(state.categories.firstOrNull { it.id == budget.categoryId }?.localizedName(useBangla) ?: budget.categoryId.orEmpty(), Modifier.weight(1f), maxLines = 2)
-                    Text(MoneyFormatter.formatMinorUnits(budget.amountMinor))
+                    Text(MoneyFormatter.formatMinorUnits(budget.amountMinor), style = MaterialTheme.typography.titleMedium)
                     TextButton(onClick = { onDelete(budget.id) }) { Text(stringResource(R.string.delete)) }
                 }
             }

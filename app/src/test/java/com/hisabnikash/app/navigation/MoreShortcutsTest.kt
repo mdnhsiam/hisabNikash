@@ -16,6 +16,13 @@ import org.robolectric.annotation.Config
 class MoreShortcutsTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
+    @Test fun `font license dialog includes both packaged families`() {
+        compose.setContent { HisabTheme { MoreScreen({}, {}) } }
+        compose.onNodeWithText("Font license").performScrollTo().performClick()
+        compose.onNode(hasText("Hind Siliguri", substring = true)).assertExists()
+        compose.onNode(hasText("Noto Sans Bengali", substring = true)).assertExists()
+    }
+
     @Test fun `backup language and savings are discoverable without opening generic settings`() {
         var settingsOpened = 0
         var savingsOpened = 0

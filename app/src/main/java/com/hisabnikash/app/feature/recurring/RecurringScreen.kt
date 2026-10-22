@@ -94,7 +94,7 @@ fun RecurringScreen(
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(item.description, style = MaterialTheme.typography.titleMedium)
-                        Text(MoneyFormatter.formatMinorUnits(item.amountMinor))
+                        Text(MoneyFormatter.formatMinorUnits(item.amountMinor), style = MaterialTheme.typography.titleMedium)
                         Text(java.time.Instant.ofEpochMilli(item.nextDueAtEpochMillis).atZone(MonthKey.DHAKA).toLocalDate().format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(androidx.compose.ui.platform.LocalConfiguration.current.locales[0])))
                         Text(stringResource(if (!item.isEnabled) R.string.recurring_disabled else if (item.type == TransactionType.EXPENSE) R.string.expense else R.string.income), style = MaterialTheme.typography.bodySmall)
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

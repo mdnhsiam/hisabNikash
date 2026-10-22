@@ -20,6 +20,7 @@ fun BudgetProgress(status: BudgetStatus, modifier: Modifier = Modifier) {
         Text(
             text = if (status.isExceeded) stringResource(R.string.budget_over_by, MoneyFormatter.formatMinorUnits(-status.remainingMinor))
             else stringResource(R.string.budget_remaining, MoneyFormatter.formatMinorUnits(status.remainingMinor)),
+            style = MaterialTheme.typography.titleMedium,
             color = if (status.isExceeded) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
         )
         LinearProgressIndicator(

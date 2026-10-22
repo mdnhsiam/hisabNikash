@@ -51,7 +51,7 @@ fun ReportsScreen(
         report.dailyTotals.forEach { (day, totals) ->
             Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                 Text(day.format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale)), style = MaterialTheme.typography.titleSmall)
-                Text(stringResource(R.string.daily_income_expense, MoneyFormatter.formatMinorUnits(totals.incomeMinor), MoneyFormatter.formatMinorUnits(totals.expenseMinor)))
+                Text(stringResource(R.string.daily_income_expense, MoneyFormatter.formatMinorUnits(totals.incomeMinor), MoneyFormatter.formatMinorUnits(totals.expenseMinor)), style = MaterialTheme.typography.titleMedium)
             }
         }
         if (report.dailyTotals.isEmpty()) Text(stringResource(R.string.no_transactions_message))
@@ -69,7 +69,7 @@ fun ReportsScreen(
 private fun BreakdownRow(label: String, amount: Long) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, Modifier.weight(1f).padding(end = 8.dp), maxLines = 2)
-        Text(MoneyFormatter.formatMinorUnits(amount))
+        Text(MoneyFormatter.formatMinorUnits(amount), style = MaterialTheme.typography.titleMedium)
     }
 }
 

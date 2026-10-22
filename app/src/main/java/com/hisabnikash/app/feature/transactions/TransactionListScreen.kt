@@ -99,6 +99,7 @@ fun TransactionListScreen(
                             Column {
                                 Text(
                                     text = (if (transaction.type == TransactionType.EXPENSE) "−" else "+") + MoneyFormatter.formatMinorUnits(transaction.amountMinor),
+                                    style = MaterialTheme.typography.titleMedium,
                                     color = if (transaction.type == TransactionType.EXPENSE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                                 )
                                 TextButton(onClick = { deleting = transaction }) { Text(stringResource(R.string.delete)) }
