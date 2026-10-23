@@ -4,7 +4,7 @@
 
 Owner approved the bounded 0.1.5/code6 UI adjustment: monthly totals visible from entry; only recent entries require local reveal; larger mint summary with stronger financial typography; functional More shortcuts. Existing native partial/expanded QuickEntrySheet and all financial/storage behavior remain unchanged. The subsequent owner-approved 0.1.6/code7 candidate packages Hind Siliguri for display/headings/titles/labels and Noto Sans Bengali for body prose. Both fonts and their OFL licenses are offline assets; no font provider or runtime dependency was added.
 
-Published GitHub test download is now [0.1.5-alpha.1](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.5-alpha.1), with remote size/digest verified against the local APK. [Current verification report](ui-polish-2026-10-23.md). No existing release APK was overwritten.
+Published GitHub test download is now [0.1.6-alpha.1](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.6-alpha.1), with remote size/digest verified against the local APK. [Current verification report](font-oauth-2026-10-23.md). No existing release APK was overwritten. The [0.1.5 UI report](ui-polish-2026-10-23.md) is historical.
 
 ## Remaining setup and acceptance gates
 

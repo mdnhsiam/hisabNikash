@@ -22,7 +22,9 @@ Final command (installed local Gradle cache and Android Studio JDK):
 
 Final result: BUILD SUCCESSFUL in 2m38s,129 tasks (32 executed,97 up-to-date). 177 JVM/Robolectric tests, zero failures. Debug and release lint: No issues found. Debug and minified unsigned release APK builds passed. Instrumentation sources compiled, not executed. No application code changed after this gate. Native Robolectric Home English, Bangla200% and expanded entry renders inspected; these are not physical-phone screenshots. Existing non-blocking kapt processor-option warnings remain.
 
-Debug APK:17,499,712 bytes; SHA256 `fed54b5347d48be121b30834b974edfecea4a769d71346c59d74316239be419e`. Package `com.hisabnikash.app`, minAPI24/targetAPI36, version0.1.6/code7. apksigner verification succeeded; certificate matches0.1.5, SHA1 `1B:49:EA:24:C0:84:6D:6C:3E:A4:77:C0:00:8C:AB:56:13:45:77:FC`. Debug16K zip alignment check exit0. This is a debug-signed controlled test candidate, not an owner-signed production build. GitHub publication is recorded only after asset verification.
+Debug APK:17,499,712 bytes; SHA256 `fed54b5347d48be121b30834b974edfecea4a769d71346c59d74316239be419e`. Package `com.hisabnikash.app`, minAPI24/targetAPI36, version0.1.6/code7. apksigner verification succeeded; certificate matches0.1.5, SHA1 `1B:49:EA:24:C0:84:6D:6C:3E:A4:77:C0:00:8C:AB:56:13:45:77:FC`. Debug16K zip alignment check exit0. This is a debug-signed controlled test candidate, not an owner-signed production build.
+
+Published [v0.1.6-alpha.1](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.6-alpha.1), release421265268, asset667271293, at `2026-10-22T22:30:15Z` (2026-10-23 Asia/Dhaka). Fresh GitHub metadata confirms draft=false, prerelease=true, asset uploaded,17,499,712 bytes and matching SHA256. Remote tag points to application source `16c5c53ccd60558dc6ba89a5557a796adadc414b`. Later documentation commits do not alter the binary. No older release/asset removed.
 
 ## Cloud setup
 

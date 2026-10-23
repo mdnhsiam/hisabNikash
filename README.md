@@ -6,11 +6,11 @@ Bangla-first, offline-first personal income and expense tracking for Android. Th
 
 The generated ledger/checkmark logo is placed in the dashboard and Android launcher. [Logo source, generation prompts and placement](docs/branding/logo-generation.md), [branding review and regression evidence](docs/branding/review-and-verification.md).
 
-## Current source candidate: 0.1.5
+## Current published test build: 0.1.6
 
-The owner-approved follow-up keeps monthly remainder/income/expense visible from launch, hides only recent transactions behind a local show/hide action, strengthens financial typography and adds direct More shortcuts. Packaged offline Noto remains the default pending the owner's font choice. The previous half/full native transaction sheet remains unchanged. [Setup audit and Google OAuth runbook](docs/testing/setup-status-2026-10-23.md).
+The owner-approved follow-up packages Hind Siliguri for display/headings/buttons and emphasized financial amounts, with Noto Sans Bengali for body prose. Both fonts and their licenses work offline. Monthly totals stay visible, recent entries locally hidden, More shortcuts and half/full native entry sheet unchanged. Owner-approved Google Cloud test configuration is ready, but phone authorization and actual backup/restore remain unverified. No billing account/card/paid quota increase was added. [Setup audit and Google OAuth runbook](docs/testing/setup-status-2026-10-23.md).
 
-Download [HisabNikash0.1.5 test APK](https://github.com/mdnhsiam/hisabNikash/releases/download/v0.1.5-alpha.1/HisabNikash-0.1.5-test.apk) from the private [0.1.5 prerelease](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.5-alpha.1), published2026-10-23 (Asia/Dhaka). Remote size/SHA256 match the verified local APK. Install over the existing app without uninstall/data clear; actual phone update/data preservation remains unverified. [174-test clean verification and limitations](docs/testing/ui-polish-2026-10-23.md). This is not production approval.
+Download [HisabNikash 0.1.6 test APK](https://github.com/mdnhsiam/hisabNikash/releases/download/v0.1.6-alpha.1/HisabNikash-0.1.6-test.apk) from the private [0.1.6 prerelease](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.6-alpha.1), published2026-10-23 (Asia/Dhaka). Remote size/SHA256 match the verified local APK. Install over the existing app without uninstall/data clear; actual phone update/data preservation remains unverified. [177-test verification and limitations](docs/testing/font-oauth-2026-10-23.md). This is not production approval. Previous [0.1.5 prerelease](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.5-alpha.1) and its [174-test report](docs/testing/ui-polish-2026-10-23.md) remain historical evidence.
 
 ## Previous published closed-test build: 0.1.4
 
