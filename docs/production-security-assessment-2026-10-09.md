@@ -1,6 +1,6 @@
 # HisabNikash production security assessment
 
-2026-10-23: source follow-up0.1.5/code6 shows monthly totals by default and hides only recent entries. This intentionally changes display privacy, not authentication or storage encryption. Published test APK is now0.1.5 (verified remote size/digest); current setup gates: [setup audit](testing/setup-status-2026-10-23.md). No new penetration test/security certification is implied.
+2026-10-23: published test APK0.1.6/code7 uses offline Hind/Noto typography; totals are visible and only recent entries require reveal. This is display privacy, not authentication or storage encryption. [Current verification](testing/font-oauth-2026-10-23.md), [setup audit](testing/setup-status-2026-10-23.md), [production hold/gates](testing/production-preparation-2026-10-23.md). Fresh resolved release inventory107 packages; [2026-10-23 OSV check](security/osv-runtime-2026-10-23.json) returned0 known affected packages. No new penetration test/security certification is implied. Earlier evidence below is historical.
 
 ## 2026-10-21 UI candidate refresh
 

@@ -12,6 +12,8 @@ The owner-approved follow-up packages Hind Siliguri for display/headings/buttons
 
 Download [HisabNikash 0.1.6 test APK](https://github.com/mdnhsiam/hisabNikash/releases/download/v0.1.6-alpha.1/HisabNikash-0.1.6-test.apk) from the private [0.1.6 prerelease](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.6-alpha.1), published2026-10-23 (Asia/Dhaka). Remote size/SHA256 match the verified local APK. Install over the existing app without uninstall/data clear; actual phone update/data preservation remains unverified. [177-test verification and limitations](docs/testing/font-oauth-2026-10-23.md). This is not production approval. Previous [0.1.5 prerelease](https://github.com/mdnhsiam/hisabNikash/releases/tag/v0.1.5-alpha.1) and its [174-test report](docs/testing/ui-polish-2026-10-23.md) remain historical evidence.
 
+Production preparation is staged, not published: [release hold, signing/migration and final acceptance sequence](docs/testing/production-preparation-2026-10-23.md). Public OAuth and a final release require later owner approval. [Bilingual privacy notice draft for owner review](docs/privacy/public-privacy-draft.md) is not yet hosted or submitted. No billing/card or paid hosted CI was enabled.
+
 ## Previous published closed-test build: 0.1.4
 
 The redesigned native UI is implemented and pushed: private-by-default Home with eye-to-reveal, readable offline Bangla typography, four navigation destinations and an expandable transaction sheet. Clean verification:171 tests, zero failures; debug/release lint zero issues. [UI review](docs/testing/minimal-ui-review-2026-10-21.md).

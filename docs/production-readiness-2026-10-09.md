@@ -1,6 +1,6 @@
 # HisabNikash release readiness
 
-2026-10-23: source follow-up0.1.5/code6 revises Home to show monthly totals while hiding only recent entries. Published GitHub test APK is now0.1.5, with verified remote size/digest. Current owner/device/OAuth/signing gates and runbook: [setup audit](testing/setup-status-2026-10-23.md). The dated0.1.4 results below are historical, not a fresh candidate certification.
+2026-10-23: published test APK0.1.6/code7 includes approved offline Hind/Noto typography. [Current177-test/artifact report](testing/font-oauth-2026-10-23.md), [Cloud test setup](testing/setup-status-2026-10-23.md), and [production preparation / explicit release hold](testing/production-preparation-2026-10-23.md). Owner requests preparation only; public OAuth/final release must wait for later approval and signing/device gates. The dated0.1.4 and earlier results below are historical, not a fresh candidate certification.
 
 ## 2026-10-21 UI candidate refresh
 

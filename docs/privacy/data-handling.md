@@ -4,7 +4,7 @@ HisabNikash is offline-first. Transactions, categories, budgets, goals and recur
 
 ## Home display privacy
 
-Home starts with monthly totals and recent transaction details hidden. The labeled eye button reveals both; hiding removes private text from composition and accessibility semantics, rather than placing a visual overlay over it. Leaving Home, recreating the Activity, or pausing/backgrounding the app requires a fresh reveal. Reports and the transaction list remain intentionally accessible through explicit navigation.
+As of0.1.5/0.1.6, Home shows monthly remaining/income/expense immediately, without a global eye button. Only recent transaction details start hidden. Their local show/hide control removes private entry text from composition and accessibility semantics rather than placing an overlay over it. Leaving Home, recreating the Activity, or pausing/backgrounding the app requires a fresh reveal of recent entries, not totals. Reports and the transaction list remain intentionally accessible through explicit navigation.
 
 This is shoulder-surfing protection, not authentication, encryption, a biometric app lock, screenshot blocking, or protection against a compromised/unlocked phone. It does not erase financial records. Unsaved entry drafts survive sheet resizing and Activity recreation, not guaranteed system process death; save important entries before leaving.
 
